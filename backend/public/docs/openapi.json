@@ -1,0 +1,34 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Serralleria Solidaria API",
+        "version": "1.0.0",
+        "description": "Documentación de la API de Serralleria Solidaria"
+    },
+    "servers": [
+        { "url": "http://localhost", "description": "Servidor local" }
+    ],
+    "paths": {
+        "/api/test": {
+            "get": {
+                "summary": "Test endpoint",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": { "type": "string" },
+                                        "message": { "type": "string" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
