@@ -6,15 +6,70 @@
     "description": "Documentación de la API de Serralleria Solidaria"
   },
   "servers": [{ "url": "/", "description": "Servidor local (relativo)" }],
-  "tags": [
-    
-  ],
+  "tags": [],
   "paths": {
     "/api/test": {
       "get": {
         "summary": "Test endpoint",
         "responses": {
           "200": { "description": "OK" }
+        }
+      }
+    },
+    "/api/execute-sql": {
+      "post": {
+        "summary": "Ejecutar consulta SQL",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sql": {
+                    "type": "string",
+                    "example": "SELECT * FROM products"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resultado de la consulta",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": { "type": "object" }
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "affected_rows": { "type": "integer" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error en la consulta",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }

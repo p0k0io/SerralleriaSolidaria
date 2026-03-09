@@ -26,4 +26,32 @@
  *     )
  *   )
  * )
+ *
+ * @OA\Post(
+ *   path="/api/execute-sql",
+ *   summary="Ejecutar consulta SQL",
+ *   @OA\RequestBody(
+ *     required=true,
+ *     @OA\JsonContent(
+ *       @OA\Property(property="sql", type="string", example="SELECT * FROM products")
+ *     )
+ *   ),
+ *   @OA\Response(
+ *     response=200,
+ *     description="Resultado de la consulta",
+ *     @OA\JsonContent(
+ *       oneOf={
+ *         @OA\Schema(type="array", @OA\Items(type="object")),
+ *         @OA\Schema(type="object", @OA\Property(property="affected_rows", type="integer"))
+ *       }
+ *     )
+ *   ),
+ *   @OA\Response(
+ *     response=400,
+ *     description="Error en la consulta",
+ *     @OA\JsonContent(
+ *       @OA\Property(property="error", type="string")
+ *     )
+ *   )
+ * )
  */
