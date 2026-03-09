@@ -1,4 +1,7 @@
 <?php
+
+namespace App;
+
 /**
  * @OA\OpenApi(
  *   @OA\Info(
@@ -16,8 +19,27 @@
  *       summary="Test endpoint",
  *       @OA\Response(response=200, description="OK")
  *     )
+ *   ),
+ *   @OA\PathItem(
+ *     path="/api/user",
+ *     @OA\Get(
+ *       summary="Obtener usuario autenticado",
+ *       security={{"sanctum":{}}},
+ *       @OA\Response(
+ *         response=200,
+ *         description="Datos del usuario",
+ *         @OA\JsonContent(
+ *           @OA\Property(property="id", type="integer"),
+ *           @OA\Property(property="name", type="string"),
+ *           @OA\Property(property="email", type="string")
+ *         )
+ *       ),
+ *       @OA\Response(response=401, description="No autorizado")
+ *     )
  *   )
  * )
  */
 
 // file contains only annotations for swagger-php
+
+class SwaggerRoot {}

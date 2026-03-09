@@ -1,4 +1,7 @@
 <?php
+// Este fichero se usa sólo para generación de OpenAPI.
+// Se pueden dejar aquí las anotaciones principales.
+
 /**
  * @OA\Info(
  *   title="Serralleria Solidaria API",
