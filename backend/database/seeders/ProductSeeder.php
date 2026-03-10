@@ -8,28 +8,26 @@ use App\Models\Variant;
 use App\Models\AttributeType;
 use App\Models\AttributeValue;
 use App\Models\VariantAttribute;
-use App\Models\Category; // <--- IMPORTANTE
+use App\Models\Category; 
 
 class ProductSeeder extends Seeder
 {
     public function run()
     {
-        // Crear categoría si no existe
+
         $category = Category::firstOrCreate([
             'id' => 1
         ], [
-            'name' => 'Cerraduras',  // Nombre de la categoría
+            'name' => 'Cerraduras',
             'description' => 'Categoría de productos de cerraduras y seguridad',
         ]);
 
-        // -------------------
-        // Producto 1: Bombín
-        // -------------------
+   
         $product1 = Product::create([
             'name' => 'Bombín de seguridad',
             'description' => 'Bombín resistente para puertas de seguridad',
             'manufacturer' => 'SegurLock',
-            'category_id' => $category->id, // <--- usar la categoría creada
+            'category_id' => $category->id,
             'active' => true,
         ]);
 
@@ -51,7 +49,7 @@ class ProductSeeder extends Seeder
             'attribute_value_id' => $attrValue1->id
         ]);
 
-        // ... y lo mismo para los demás productos
+   
         $product2 = Product::create([
             'name' => 'Escudo protector',
             'description' => 'Escudo metálico para reforzar cerraduras',

@@ -9,6 +9,12 @@ export default function AdminLayout() {
           <Link to="/admin/dashboard" className="block">
             Dashboard
           </Link>
+          <Link to="/admin/products" className="block">
+          Gestion Producto
+          </Link>
+          <Link to="/admin/packs" className="block">
+          Gestion Packs
+          </Link>
         </nav>
       </aside>
 
