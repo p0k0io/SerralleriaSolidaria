@@ -14,6 +14,13 @@ class VariantController extends Controller
         return response()->json($variants);
     }
 
+    // ⬇️ AÑADE ESTE MÉTODO ⬇️
+    public function show($id)
+    {
+        $variant = Variant::with('product')->findOrFail($id);
+        return response()->json($variant);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -57,6 +64,24 @@ class VariantController extends Controller
         return response()->json([
             'message' => 'Variant deleted'
         ]);
+    }
+
+    public function getActiveVariants()
+    {
+        $variants = Variant::with('product')
+            ->where('active', true)
+            ->get()
+            ->map(function ($variant) {
+                return [
+                    'id' => $variant->id,
+                    'sku' => $variant->sku,
+                    'price' => $variant->price,
+                    'product_name' => $variant->product->name,
+                    'display' => $variant->product->name . ' - ' . $variant->sku . ' ($' . $variant->price . ')'
+                ];
+            });
+        
+        return response()->json($variants);
     }
 
     public function disable($id)

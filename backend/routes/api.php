@@ -2,10 +2,11 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\ProductController;
-use App\Http\Controllers\Api\VariantController;
+use App\Http\Controllers\Api\Api\ProductController;
+use App\Http\Controllers\Api\Api\VariantController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\SqlController;
+use App\Http\Controllers\Api\PackController;
 
 Route::get('/test', function () {
     return response()->json([
@@ -45,7 +46,6 @@ Route::put('/variants/{id}', [VariantController::class, 'update']);
 
 // Borrar variante
 Route::delete('/variants/{id}', [VariantController::class, 'destroy']);
-
 Route::post('/variants/disable/{id}', [VariantController::class, 'disable']);
 
 Route::post('/variants/enable/{id}', [VariantController::class, 'enable']);
@@ -74,3 +74,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::post('/execute-sql', [SqlController::class, 'execute']);
+
+Route::apiResource('packs', PackController::class);
+
+Route::get('/variants/active', [VariantController::class, 'getActiveVariants']);
