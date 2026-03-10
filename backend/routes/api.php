@@ -2,7 +2,9 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\VariantController;
+use App\Http\Controllers\SqlController;
 
 Route::get('/test', function () {
     return response()->json([
