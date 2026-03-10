@@ -31,11 +31,6 @@ Route::put('/products/{id}', [ProductController::class, 'update']);
 Route::delete('/products/{id}', [ProductController::class, 'destroy']);
 
 
-/*
-|--------------------------------------------------------------------------
-| VARIANTS
-|--------------------------------------------------------------------------
-*/
 
 // Obtener todas las variantes
 Route::get('/variants', [VariantController::class, 'index']);
@@ -53,11 +48,6 @@ Route::put('/variants/{id}', [VariantController::class, 'update']);
 Route::delete('/variants/{id}', [VariantController::class, 'destroy']);
 
 
-/*
-|--------------------------------------------------------------------------
-| USER (Sanctum)
-|--------------------------------------------------------------------------
-*/
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();

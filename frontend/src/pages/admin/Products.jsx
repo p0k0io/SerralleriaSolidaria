@@ -1,8 +1,13 @@
+import { ShowProducts } from "../../components/ShowProducts";
 export default function Products(){
 
     return(
         <div>
-            <h1>dfsafa</h1>
+            <h1>Productos</h1>
+            <div>
+               
+               <ShowProducts></ShowProducts>
+            </div>
         </div>
     );
     
