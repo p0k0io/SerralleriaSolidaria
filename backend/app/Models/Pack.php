@@ -11,3 +11,4 @@ class Pack extends Model
         return $this->hasMany(PackVariant::class);
     }
 }
+ 
