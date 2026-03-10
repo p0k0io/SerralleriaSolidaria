@@ -58,4 +58,24 @@ class VariantController extends Controller
             'message' => 'Variant deleted'
         ]);
     }
+
+    public function disable($id)
+    {
+        $variant = Variant::findOrFail($id);
+        $variant->update(['active' => false]);
+
+        return response()->json([
+            'message' => 'Variante deshabilitada'
+        ]);
+    }
+
+    public function enable($id)
+    {
+        $variant = Variant::findOrFail($id);
+        $variant ->update(['active' => true]);
+
+        return response()->json([
+            'message' => 'Variante activada'
+        ]);
+    }
 }
