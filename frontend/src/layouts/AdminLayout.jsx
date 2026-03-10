@@ -15,6 +15,9 @@ export default function AdminLayout() {
           <Link to="/admin/packs" className="block">
           Gestion Packs
           </Link>
+          <Link to="/admin/categories" className="block">
+            Gestión Categorías
+          </Link>
         </nav>
       </aside>
 
