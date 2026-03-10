@@ -2,11 +2,9 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
-use App\Http\Controllers\Api\ProductController;
-use App\Http\Controllers\Api\VariantController;
-
-
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\VariantController;
+use App\Http\Controllers\SqlController;
 
 Route::get('/test', function () {
     return response()->json([
@@ -52,3 +50,5 @@ Route::delete('/variants/{id}', [VariantController::class, 'destroy']);
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+Route::post('/execute-sql', [SqlController::class, 'execute']);

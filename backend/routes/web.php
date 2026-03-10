@@ -2,6 +2,6 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/docs', function () {
+Route::get('/', function () {
     return view('swagger');
 });
