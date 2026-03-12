@@ -2,11 +2,16 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\Api\ProductController;
-use App\Http\Controllers\Api\Api\VariantController;
+use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\VariantController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\SqlController;
 use App\Http\Controllers\Api\PackController;
+
+
+Route::middleware(['cors'])->group(function () {
+    Route::post('/products-with-variants', [\App\Http\Controllers\ProductController::class, 'storeWithVariants']);
+});
 
 Route::get('/test', function () {
     return response()->json([
@@ -46,10 +51,11 @@ Route::put('/variants/{id}', [VariantController::class, 'update']);
 
 // Borrar variante
 Route::delete('/variants/{id}', [VariantController::class, 'destroy']);
+//Desactivar Variante
 Route::post('/variants/disable/{id}', [VariantController::class, 'disable']);
-
+//Activar Variante
 Route::post('/variants/enable/{id}', [VariantController::class, 'enable']);
-
+//Activar producto
 Route::post('/products/enable/{id}', [ProductController::class, 'enable']);
 
 // Obtener todas las categorías
