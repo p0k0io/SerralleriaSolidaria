@@ -29,7 +29,7 @@ export default function CreatePack() {
         const variantsWithDisplay = data.map(variant => ({
           ...variant,
           display: variant.display || 
-            `${variant.product?.name || 'Producto sin nombre'} - SKU: ${variant.sku || 'N/A'} - $${variant.price}`
+            `${variant.product?.name || 'Producto sin nombre'} - SKU: ${variant.sku || 'N/A'}`
         }));
         setVariants(variantsWithDisplay);
       })
