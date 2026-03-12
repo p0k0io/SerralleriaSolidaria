@@ -1,18 +1,20 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
-    // Listar todas las categorías de forma segura
+    /**
+     * Listar todas las categorías
+     */
     public function index()
     {
         try {
-            // Solo traemos categorías válidas y campos mínimos
             $categories = Category::with([
                 'parent:id,name',
                 'children:id,name,parent_id'
@@ -27,7 +29,9 @@ class CategoryController extends Controller
         }
     }
 
-    // Mostrar una categoría específica
+    /**
+     * Mostrar una categoría específica
+     */
     public function show($id)
     {
         try {
@@ -50,7 +54,9 @@ class CategoryController extends Controller
         }
     }
 
-    // Crear categoría
+    /**
+     * Crear categoría
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -74,7 +80,9 @@ class CategoryController extends Controller
         }
     }
 
-    // Actualizar categoría
+    /**
+     * Actualizar categoría
+     */
     public function update(Request $request, $id)
     {
         $category = Category::find($id);
@@ -103,7 +111,9 @@ class CategoryController extends Controller
         }
     }
 
-    // Eliminar categoría
+    /**
+     * Eliminar categoría
+     */
     public function destroy($id)
     {
         $category = Category::find($id);

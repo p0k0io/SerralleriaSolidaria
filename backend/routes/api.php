@@ -58,19 +58,10 @@ Route::post('/variants/enable/{id}', [VariantController::class, 'enable']);
 //Activar producto
 Route::post('/products/enable/{id}', [ProductController::class, 'enable']);
 
-// Obtener todas las categorías
 Route::get('/categories', [CategoryController::class, 'index']);
-
-// Obtener una categoría específica
 Route::get('/categories/{id}', [CategoryController::class, 'show']);
-
-// Crear categoría
 Route::post('/categories', [CategoryController::class, 'store']);
-
-// Actualizar categoría
 Route::put('/categories/{id}', [CategoryController::class, 'update']);
-
-// Borrar categoría
 Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
 
 Route::post('/products/disable/{id}', [ProductController::class, 'disable']);

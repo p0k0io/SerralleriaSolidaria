@@ -1,15 +1,25 @@
 import { useState } from "react";
 
 export default function CreateCategory() {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    parent_id: null, // opcional, puedes asignar un ID de categoría padre
+  });
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
+  // Cambiar valores del formulario
+  const handleChange = (field, value) => setForm({ ...form, [field]: value });
+
+  // Enviar formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setMessage("");
+    setError("");
 
-    if (!name) {
-      setMessage("Por favor completa el nombre de la categoría");
+    if (!form.name.trim()) {
+      setError("Por favor completa el nombre de la categoría");
       return;
     }
 
@@ -17,27 +27,27 @@ export default function CreateCategory() {
       const res = await fetch("http://localhost:8000/api/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name,
-          description: description,
-          parent_id: null, // opcional, puedes cambiar si quieres asignar padre
-        }),
+        body: JSON.stringify(form),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Error al crear la categoría");
+        // Manejar validación de Laravel
+        const msg =
+          data.message ||
+          Object.values(data.errors || {})
+            .flat()
+            .join(", ");
+        throw new Error(msg);
       }
 
-      const data = await res.json();
-      console.log("Categoría creada:", data);
-      setMessage("Categoría creada correctamente");
+      setMessage(`Categoría creada correctamente: ${data.name}`);
 
       // Limpiar formulario
-      setName("");
-      setDescription("");
+      setForm({ name: "", description: "", parent_id: null });
     } catch (err) {
-      setMessage(`Error: ${err.message}`);
+      setError(`Error: ${err.message}`);
     }
   };
 
@@ -48,6 +58,9 @@ export default function CreateCategory() {
           Crear Categoría
         </h2>
 
+        {message && <p className="text-green-600 text-center mb-4">{message}</p>}
+        {error && <p className="text-red-600 text-center mb-4">{error}</p>}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm mb-1">Nombre</label>
@@ -55,8 +68,9 @@ export default function CreateCategory() {
               type="text"
               className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               placeholder="Nombre de la categoría"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={form.name}
+              onChange={(e) => handleChange("name", e.target.value)}
+              required
             />
           </div>
 
@@ -65,12 +79,26 @@ export default function CreateCategory() {
             <textarea
               className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               placeholder="Descripción de la categoría"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              value={form.description}
+              onChange={(e) => handleChange("description", e.target.value)}
             />
           </div>
 
-          {message && <p className="text-sm text-green-600">{message}</p>}
+          <div>
+            <label className="block text-sm mb-1">ID de Categoría Padre (opcional)</label>
+            <input
+              type="number"
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="ID de la categoría padre"
+              value={form.parent_id || ""}
+              onChange={(e) =>
+                handleChange(
+                  "parent_id",
+                  e.target.value ? parseInt(e.target.value) : null
+                )
+              }
+            />
+          </div>
 
           <button
             type="submit"
