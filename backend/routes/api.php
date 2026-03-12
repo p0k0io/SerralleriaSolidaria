@@ -2,8 +2,8 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\Api\ProductController;
-use App\Http\Controllers\Api\Api\VariantController;
+use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\VariantController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\SqlController;
 use App\Http\Controllers\Api\PackController;
@@ -52,19 +52,10 @@ Route::post('/variants/enable/{id}', [VariantController::class, 'enable']);
 
 Route::post('/products/enable/{id}', [ProductController::class, 'enable']);
 
-// Obtener todas las categorías
 Route::get('/categories', [CategoryController::class, 'index']);
-
-// Obtener una categoría específica
 Route::get('/categories/{id}', [CategoryController::class, 'show']);
-
-// Crear categoría
 Route::post('/categories', [CategoryController::class, 'store']);
-
-// Actualizar categoría
 Route::put('/categories/{id}', [CategoryController::class, 'update']);
-
-// Borrar categoría
 Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
 
 Route::post('/products/disable/{id}', [ProductController::class, 'disable']);
