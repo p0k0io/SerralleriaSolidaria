@@ -7,11 +7,8 @@ use App\Http\Controllers\Api\VariantController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\SqlController;
 use App\Http\Controllers\Api\PackController;
+use App\Http\Controllers\AuthController;
 
-
-Route::middleware(['cors'])->group(function () {
-    Route::post('/products-with-variants', [\App\Http\Controllers\ProductController::class, 'storeWithVariants']);
-});
 
 Route::get('/test', function () {
     return response()->json([
@@ -75,12 +72,24 @@ Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
 
 Route::post('/products/disable/{id}', [ProductController::class, 'disable']);
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
 
 Route::post('/execute-sql', [SqlController::class, 'execute']);
 
 Route::apiResource('packs', PackController::class);
 
 Route::get('/variants/active', [VariantController::class, 'getActiveVariants']);
+
+
+//Autentificacion
+
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
+
+    Route::post('/logout', [AuthController::class, 'logout']);
+});
