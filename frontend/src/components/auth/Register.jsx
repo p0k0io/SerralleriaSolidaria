@@ -14,65 +14,65 @@ export default function Register() {
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+      e.preventDefault();
 
-  setError("");
-  setSuccess("");
+      setError("");
+      setSuccess("");
 
-  if (password !== confirmPassword) {
-    setError("Las contraseñas no coinciden");
-    return;
-  }
+      if (password !== confirmPassword) {
+        setError("Las contraseñas no coinciden");
+        return;
+      }
 
-  setLoading(true);
+      setLoading(true);
 
-  try {
-    const response = await fetch("http://localhost:8000/api/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ name, email, address, password, username })
-    });
+      try {
+        const response = await fetch("http://localhost:8000/api/register", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ name, email, address, password, username })
+        });
 
-    const text = await response.text(); // <-- leer como texto primero
+        const text = await response.text(); // <-- leer como texto primero
 
-    let data;
-    try {
-      data = JSON.parse(text);          // intentar parsear JSON
-    } catch (err) {
-      console.error("Respuesta no es JSON:", text);
-      setError("Error del servidor: respuesta inválida");
+        let data;
+        try {
+          data = JSON.parse(text);          // intentar parsear JSON
+        } catch (err) {
+          console.error("Respuesta no es JSON:", text);
+          setError("Error del servidor: respuesta inválida");
+          setLoading(false);
+          return;
+        }
+
+        if (!response.ok) {
+          setError(data.message || "Error al registrar");
+          setLoading(false);
+          return;
+        }
+
+        if (data.token) {
+          localStorage.setItem("token", data.token);
+        }
+
+        setSuccess("Usuario registrado correctamente");
+
+        setName("");
+        setUsername("");
+        setEmail("");
+        setAddress("");
+        setPassword("");
+        setConfirmPassword("");
+
+      } catch (err) {
+        console.error(err);
+        setError("Error del servidor");
+      }
+
       setLoading(false);
-      return;
-    }
-
-    if (!response.ok) {
-      setError(data.message || "Error al registrar");
-      setLoading(false);
-      return;
-    }
-
-    if (data.token) {
-      localStorage.setItem("token", data.token);
-    }
-
-    setSuccess("Usuario registrado correctamente");
-
-    setName("");
-    setUsername("");
-    setEmail("");
-    setAddress("");
-    setPassword("");
-    setConfirmPassword("");
-
-  } catch (err) {
-    console.error(err);
-    setError("Error del servidor");
-  }
-
-  setLoading(false);
-};
+  };
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gray-100">

@@ -1,13 +1,53 @@
 import { useState } from "react"
 
 export default function Login() {
+
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [error, setError]= useState("")
+  const [success, setSuccess] = useState("")
+  const [loading, setLoading] = useState("")
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    console.log(email, password)
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  setError("");
+  setSuccess("");
+  setLoading(true);
+
+  try {
+    const response = await fetch("http://localhost:8000/api/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      setError(data.message || "Error al iniciar sesión");
+      setLoading(false);
+      return;
+    }
+
+    if (data.token) {
+      localStorage.setItem("token", data.token);
+    }
+
+    setSuccess("Login correcto");
+
+    setEmail("");
+    setPassword("");
+
+  } catch (err) {
+    console.error(err);
+    setError("Error del servidor");
   }
+
+  setLoading(false);
+};
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gray-100">
