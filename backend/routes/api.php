@@ -69,3 +69,6 @@ Route::post('/execute-sql', [SqlController::class, 'execute']);
 Route::apiResource('packs', PackController::class);
 
 Route::get('/variants/active', [VariantController::class, 'getActiveVariants']);
+
+Route::post('/packs/enable/{id}', [PackController::class, 'enable']);
+Route::post('/packs/disable/{id}', [PackController::class, 'disable']);
