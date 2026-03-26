@@ -409,6 +409,131 @@
         }
       }
     },
+    "/api/products-with-variants": {
+  "post": {
+    "tags": ["Products"],
+    "summary": "Crear producto con variantes",
+    "requestBody": {
+      "required": true,
+      "content": {
+        "multipart/form-data": {
+          "schema": {
+            "type": "object",
+            "required": ["name", "category_id"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "example": "Mesa de madera"
+              },
+              "description": {
+                "type": "string",
+                "example": "Mesa moderna"
+              },
+              "manufacturer": {
+                "type": "string",
+                "example": "Ikea"
+              },
+              "category_id": {
+                "type": "integer",
+                "example": 2
+              },
+              "active": {
+                "type": "boolean",
+                "example": true
+              },
+              "variants": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "sku": {
+                      "type": "string",
+                      "example": "MESA-NOGAL"
+                    },
+                    "price": {
+                      "type": "number",
+                      "format": "float",
+                      "example": 59.99
+                    },
+                    "active": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "image": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "201": {
+        "description": "Producto y variantes creados correctamente",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "success"
+                },
+                "message": {
+                  "type": "string",
+                  "example": "Producto y variantes creados correctamente"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "integer", "example": 1 },
+                    "name": { "type": "string", "example": "Mesa de madera" },
+                    "description": { "type": "string", "example": "Mesa moderna" },
+                    "manufacturer": { "type": "string", "example": "Ikea" },
+                    "category_id": { "type": "integer", "example": 2 },
+                    "active": { "type": "boolean", "example": true },
+                    "variants": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer", "example": 10 },
+                          "product_id": { "type": "integer", "example": 1 },
+                          "sku": { "type": "string", "example": "MESA-NOGAL" },
+                          "price": { "type": "number", "format": "float", "example": 59.99 },
+                          "active": { "type": "boolean", "example": true },
+                          "image": { "type": "string", "example": "variant_images/example.jpg" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "500": {
+        "description": "Error del servidor",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": { "type": "string", "example": "error" },
+                "message": { "type": "string", "example": "Error interno del servidor" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+},
     "/api/variants/{id}": {
       "get": {
         "tags": ["Variants"],

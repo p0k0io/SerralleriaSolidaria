@@ -102,6 +102,8 @@ class VariantController extends Controller
                     'product_name' => $variant->product->name,
                     'display'      => $variant->product->name . ' — ' . $variant->sku . ' (' . $variant->price . ' €)',
                     'product'      => $variant->product,
+                    'display' => $variant->product->name . ' - ' . $variant->sku . ' ($' . $variant->price . ')',
+                    'image'=>$variant->image
                 ];
             });
 

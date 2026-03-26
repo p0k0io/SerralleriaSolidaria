@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\VariantController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\SqlController;
 use App\Http\Controllers\Api\PackController;
+use App\Http\Controllers\AuthController;
+
 
 Route::get('/test', function () {
     return response()->json([
@@ -17,6 +19,9 @@ Route::get('/test', function () {
 
 // Obtener todos los productos (activos e inactivos)
 Route::get('/products', [ProductController::class, 'index']);
+
+Route::get('/variants/active', [VariantController::class, 'getActiveVariants']);
+
 
 // Obtener un producto con sus variantes
 Route::get('/products/{id}', [ProductController::class, 'show']);
@@ -46,10 +51,11 @@ Route::put('/variants/{id}', [VariantController::class, 'update']);
 
 // Borrar variante
 Route::delete('/variants/{id}', [VariantController::class, 'destroy']);
+//Desactivar Variante
 Route::post('/variants/disable/{id}', [VariantController::class, 'disable']);
-
+//Activar Variante
 Route::post('/variants/enable/{id}', [VariantController::class, 'enable']);
-
+//Activar producto
 Route::post('/products/enable/{id}', [ProductController::class, 'enable']);
 
 Route::get('/categories', [CategoryController::class, 'index']);
@@ -60,9 +66,6 @@ Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
 
 Route::post('/products/disable/{id}', [ProductController::class, 'disable']);
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
 
 Route::post('/execute-sql', [SqlController::class, 'execute']);
 
@@ -72,3 +75,17 @@ Route::get('/variants/active', [VariantController::class, 'getActiveVariants']);
 
 Route::post('/packs/enable/{id}', [PackController::class, 'enable']);
 Route::post('/packs/disable/{id}', [PackController::class, 'disable']);
+
+//Autentificacion
+
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
+
+    Route::post('/logout', [AuthController::class, 'logout']);
+});

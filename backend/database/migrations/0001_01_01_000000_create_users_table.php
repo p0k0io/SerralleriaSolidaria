@@ -13,10 +13,12 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('username')->unique();
+            $table->string('name');           // <- coincide con React
             $table->string('email')->unique();
-            $table->string('password_hash');
+            $table->string('password');       // <- Laravel 10+ cast 'hashed'
+            $table->string('address');        // <- coincide con React
             $table->string('role')->default('customer');
+            $table->string('username');
             $table->timestamps();
         });
 
