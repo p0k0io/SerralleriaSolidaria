@@ -29,6 +29,14 @@ export default function Categories() {
       >
         {showList ? "Ocultar listado" : "Mostrar listado"}
       </button>
+      {/* Formularios */}
+      {createOpen && <CreateCategory onClose={() => setCreateOpen(false)} />}
+      {editCategoryId && (
+        <EditCategory
+          categoryId={editCategoryId}
+          onClose={() => setEditCategoryId(null)}
+        />
+      )}
 
       {/* Listado de categorías */}
       {showList && (
@@ -38,14 +46,7 @@ export default function Categories() {
         />
       )}
 
-      {/* Formularios */}
-      {createOpen && <CreateCategory onClose={() => setCreateOpen(false)} />}
-      {editCategoryId && (
-        <EditCategory
-          categoryId={editCategoryId}
-          onClose={() => setEditCategoryId(null)}
-        />
-      )}
+
       {deleteCategoryId && (
         <DeleteCategory
           categoryId={deleteCategoryId}

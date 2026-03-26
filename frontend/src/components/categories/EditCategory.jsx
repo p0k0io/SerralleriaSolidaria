@@ -4,18 +4,20 @@ export default function EditCategory({ categoryId, onClose }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    // Traer los datos de la categoría para editar
     async function fetchCategory() {
       try {
         const res = await fetch(`http://localhost:8000/api/categories/${categoryId}`);
         if (!res.ok) throw new Error("Error al cargar la categoría");
+
         const data = await res.json();
         setName(data.name);
         setDescription(data.description || "");
+
       } catch (err) {
-        setMessage(err.message);
+        setError(err.message);
       }
     }
 
@@ -24,8 +26,11 @@ export default function EditCategory({ categoryId, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name) {
-      setMessage("El nombre es obligatorio");
+    setMessage("");
+    setError("");
+
+    if (!name.trim()) {
+      setError("El nombre es obligatorio");
       return;
     }
 
@@ -36,55 +41,82 @@ export default function EditCategory({ categoryId, onClose }) {
         body: JSON.stringify({ name, description }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Error al actualizar la categoría");
+        throw new Error(data.message || "Error al actualizar la categoría");
       }
 
       setMessage("Categoría actualizada correctamente");
+
     } catch (err) {
-      setMessage(`Error: ${err.message}`);
+      setError(err.message);
     }
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
-      <div className="bg-white p-6 rounded-xl w-full max-w-md shadow-xl">
-        <h2 className="text-2xl font-bold mb-4">Editar Categoría</h2>
+    <div className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-50">
 
+      <div className="bg-white p-6 rounded-2xl w-full max-w-md shadow-xl space-y-4">
+
+        {/* TÍTULO */}
+        <h2 className="text-2xl font-bold text-slate-800 text-center">
+          Editar Categoría
+        </h2>
+
+        {/* MENSAJES */}
+        {(message || error) && (
+          <div className={`text-center p-3 rounded border ${
+            message
+              ? "bg-green-100 text-green-700 border-green-400"
+              : "bg-red-100 text-red-700 border-red-400"
+          }`}>
+            {message || error}
+          </div>
+        )}
+
+        {/* FORM */}
         <form onSubmit={handleSubmit} className="space-y-4">
+
+          {/* NOMBRE */}
           <div>
-            <label className="block text-sm mb-1">Nombre</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Nombre *
+            </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
             />
           </div>
 
+          {/* DESCRIPCIÓN */}
           <div>
-            <label className="block text-sm mb-1">Descripción</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Descripción
+            </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              rows="3"
+              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
             />
           </div>
 
-          {message && <p className="text-sm text-green-600">{message}</p>}
-
-          <div className="flex gap-2">
+          {/* BOTONES */}
+          <div className="flex gap-3 pt-2">
             <button
               type="submit"
-              className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-400"
+              className="flex-1 bg-orange-600 text-white py-2 rounded-lg hover:bg-orange-500 transition font-medium"
             >
-              Guardar
+              Guardar cambios
             </button>
+
             <button
               type="button"
               onClick={onClose}
-              className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-300"
+              className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-200 transition font-medium"
             >
               Cancelar
             </button>
