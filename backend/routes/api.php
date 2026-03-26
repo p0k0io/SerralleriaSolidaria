@@ -9,6 +9,7 @@ use App\Http\Controllers\SqlController;
 use App\Http\Controllers\Api\PackController;
 use App\Http\Controllers\AuthController;
 
+use App\Http\Controllers\DashboardController;
 
 Route::get('/test', function () {
     return response()->json([
@@ -66,6 +67,12 @@ Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
 
 Route::post('/products/disable/{id}', [ProductController::class, 'disable']);
 
+
+Route::get('/dashboard', [DashboardController::class, 'index']);
+
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+    return $request->user();
+});
 
 Route::post('/execute-sql', [SqlController::class, 'execute']);
 
