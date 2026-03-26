@@ -20,6 +20,9 @@ Route::get('/test', function () {
 // Obtener todos los productos (activos e inactivos)
 Route::get('/products', [ProductController::class, 'index']);
 
+Route::get('/variants/active', [VariantController::class, 'getActiveVariants']);
+
+
 // Obtener un producto con sus variantes
 Route::get('/products/{id}', [ProductController::class, 'show']);
 
@@ -77,7 +80,8 @@ Route::post('/execute-sql', [SqlController::class, 'execute']);
 
 Route::apiResource('packs', PackController::class);
 
-Route::get('/variants/active', [VariantController::class, 'getActiveVariants']);
+
+
 
 
 //Autentificacion

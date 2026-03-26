@@ -12,7 +12,7 @@ export default function ForgotPassword() {
       return;
     }
 
-    // Simulación de envío
+    
     console.log("Recuperación de contraseña para:", email);
     setMessage(`Se ha enviado un enlace de recuperación a ${email}`);
   };
