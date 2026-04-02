@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 export function ShowCategories({ onEdit, onDelete }) {
   const [categories, setCategories] = useState([]);
+  const [attributes, setAttributes] = useState([]); // 🔥 NUEVO
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -9,8 +10,11 @@ export function ShowCategories({ onEdit, onDelete }) {
     try {
       const res = await fetch("http://localhost:8000/api/categories");
       if (!res.ok) throw new Error("Error al obtener categorías");
+
       const data = await res.json();
-      setCategories(data);
+
+      setCategories(data.categories);      // 🔥 AJUSTE (backend nuevo formato)
+      setAttributes(data.attributes);      // 🔥 NUEVO
     } catch (err) {
       setError(err.message);
     } finally {
@@ -28,6 +32,7 @@ export function ShowCategories({ onEdit, onDelete }) {
   return (
     <div className="space-y-4">
       {categories.length === 0 && <p>No hay categorías</p>}
+
       {categories.map((cat) => (
         <div
           key={cat.id}
@@ -36,9 +41,28 @@ export function ShowCategories({ onEdit, onDelete }) {
           <div>
             <h3 className="font-semibold">{cat.name}</h3>
             <p className="text-sm text-gray-600">{cat.description}</p>
+
             <p className="text-xs text-gray-400">
               Padre: {cat.parent ? cat.parent.name : "Ninguno"}
             </p>
+
+            {/* 🔥 NUEVO: MOSTRAR ATRIBUTOS (solo visual) */}
+            {attributes.length > 0 && (
+              <p className="text-xs text-gray-500 mt-1">
+                Atributos:{" "}
+                {attributes.map((type) => (
+                  <span key={type.id}>
+                    {type.name}
+                    {type.values?.length
+                      ? ` (${type.values
+                          .map((v) => v.value)
+                          .join(", ")})`
+                      : ""}
+                    {" · "}
+                  </span>
+                ))}
+              </p>
+            )}
           </div>
 
           <div className="flex gap-2">
@@ -48,6 +72,7 @@ export function ShowCategories({ onEdit, onDelete }) {
             >
               Editar
             </button>
+
             <button
               onClick={() => onDelete(cat.id)}
               className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-500"

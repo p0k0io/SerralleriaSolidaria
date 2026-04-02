@@ -1,17 +1,30 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function CreateCategory() {
   const [form, setForm] = useState({
     name: "",
     description: "",
     parent_id: null,
+    attribute_value_id: null, // 🔥 NUEVO
   });
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  // 🔥 NUEVO: atributos
+  const [attributes, setAttributes] = useState([]);
+  const [selectedType, setSelectedType] = useState(null);
+
   const handleChange = (field, value) =>
     setForm({ ...form, [field]: value });
+
+  // 🔥 NUEVO: fetch atributos
+  useEffect(() => {
+    fetch("http://localhost:8000/api/attributes")
+      .then((res) => res.json())
+      .then((data) => setAttributes(data))
+      .catch((err) => console.error(err));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,15 +48,20 @@ export default function CreateCategory() {
       if (!res.ok) {
         const msg =
           data.message ||
-          Object.values(data.errors || {})
-            .flat()
-            .join(", ");
+          Object.values(data.errors || {}).flat().join(", ");
         throw new Error(msg);
       }
 
       setMessage(`Categoría creada correctamente: ${data.name}`);
-      setForm({ name: "", description: "", parent_id: null });
 
+      setForm({
+        name: "",
+        description: "",
+        parent_id: null,
+        attribute_value_id: null,
+      });
+
+      setSelectedType(null);
     } catch (err) {
       setError(`Error: ${err.message}`);
     }
@@ -52,12 +70,10 @@ export default function CreateCategory() {
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
 
-      {/* TÍTULO */}
       <h1 className="text-2xl font-bold text-slate-800">
         Crear Nueva Categoría
       </h1>
 
-      {/* MENSAJES */}
       {(message || error) && (
         <div className={`text-center p-3 rounded border ${
           message
@@ -68,11 +84,7 @@ export default function CreateCategory() {
         </div>
       )}
 
-      {/* FORM */}
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-4 bg-white p-6 rounded-xl shadow"
-      >
+      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-xl shadow">
 
         {/* NOMBRE */}
         <div>
@@ -122,7 +134,59 @@ export default function CreateCategory() {
           />
         </div>
 
-        {/* BOTÓN */}
+        {/* 🔥 SOLO AÑADIDO: TIPO */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">
+            Tipo de atributo
+          </label>
+
+          <select
+            className="w-full p-2 border rounded-md"
+            onChange={(e) => {
+              const type = attributes.find(
+                (t) => t.id == e.target.value
+              );
+              setSelectedType(type);
+              handleChange("attribute_value_id", null);
+            }}
+          >
+            <option value="">Selecciona un tipo</option>
+            {attributes.map((type) => (
+              <option key={type.id} value={type.id}>
+                {type.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* 🔥 SOLO AÑADIDO: VALOR */}
+        {selectedType && (
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Valor del atributo
+            </label>
+
+            <select
+              className="w-full p-2 border rounded-md"
+              value={form.attribute_value_id || ""}
+              onChange={(e) =>
+                handleChange(
+                  "attribute_value_id",
+                  parseInt(e.target.value)
+                )
+              }
+            >
+              <option value="">Selecciona un valor</option>
+              {selectedType.values?.map((val) => (
+                <option key={val.id} value={val.id}>
+                  {val.value}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* BOTÓN (IGUAL QUE EL TUYO) */}
         <button
           type="submit"
           className="w-full py-2 rounded-lg mt-4 bg-orange-600 hover:bg-orange-500 text-white font-medium transition"

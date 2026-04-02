@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\AttributeType;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -20,7 +21,13 @@ class CategoryController extends Controller
                 'children:id,name,parent_id'
             ])->get(['id', 'name', 'description', 'parent_id']);
 
-            return response()->json($categories);
+            // 🔥 añadimos atributos globales
+            $attributes = AttributeType::with('values')->get();
+
+            return response()->json([
+                'categories' => $categories,
+                'attributes' => $attributes
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al obtener categorías',
@@ -45,7 +52,13 @@ class CategoryController extends Controller
                 return response()->json(['message' => 'Categoría no encontrada'], 404);
             }
 
-            return response()->json($category);
+            // 🔥 añadimos atributos globales también aquí
+            $attributes = AttributeType::with('values')->get();
+
+            return response()->json([
+                'category' => $category,
+                'attributes' => $attributes
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al obtener la categoría',
@@ -71,7 +84,12 @@ class CategoryController extends Controller
 
         try {
             $category = Category::create($validated);
-            return response()->json($category, 201);
+
+            return response()->json([
+                'message' => 'Categoría creada correctamente',
+                'category' => $category
+            ], 201);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al crear la categoría',
@@ -86,6 +104,7 @@ class CategoryController extends Controller
     public function update(Request $request, $id)
     {
         $category = Category::find($id);
+
         if (!$category) {
             return response()->json(['message' => 'Categoría no encontrada'], 404);
         }
@@ -102,7 +121,12 @@ class CategoryController extends Controller
 
         try {
             $category->update($validated);
-            return response()->json($category);
+
+            return response()->json([
+                'message' => 'Categoría actualizada correctamente',
+                'category' => $category
+            ]);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al actualizar la categoría',
@@ -117,13 +141,18 @@ class CategoryController extends Controller
     public function destroy($id)
     {
         $category = Category::find($id);
+
         if (!$category) {
             return response()->json(['message' => 'Categoría no encontrada'], 404);
         }
 
         try {
             $category->delete();
-            return response()->json(['message' => 'Categoría eliminada correctamente']);
+
+            return response()->json([
+                'message' => 'Categoría eliminada correctamente'
+            ]);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al eliminar la categoría',
