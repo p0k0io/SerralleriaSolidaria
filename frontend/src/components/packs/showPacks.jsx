@@ -78,7 +78,6 @@ function MenuItem({ icon, label, onClick, variant }) {
   );
 }
 
-// ── Iconos SVG inline ─────────────────────────────────────────────────────────
 const EyeIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
@@ -111,7 +110,16 @@ const OffIcon = () => (
   </svg>
 );
 
-// ── Componente principal ──────────────────────────────────────────────────────
+const ImagePlaceholder = () => (
+  <div className="w-10 h-10 rounded-lg bg-slate-200 flex items-center justify-center flex-shrink-0">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <polyline points="21 15 16 10 5 21" />
+    </svg>
+  </div>
+);
+
 export default function ShowPacks() {
   const [packs, setPacks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -220,12 +228,10 @@ export default function ShowPacks() {
             key={pack.id}
             className={`bg-white rounded-2xl border transition-all duration-200 ${isOpen ? "border-orange-200 shadow-md" : "border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200"}`}
           >
-            {/* ── Cabecera ── */}
+            {/* Cabecera */}
             <div className="flex items-center gap-4 p-4">
-              {/* Indicador de estado */}
               <div className={`w-2 h-10 rounded-full flex-shrink-0 ${pack.active ? "bg-orange-500" : "bg-slate-200"}`} />
 
-              {/* Info principal */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="font-semibold text-slate-800 truncate">{pack.name}</h3>
@@ -238,7 +244,6 @@ export default function ShowPacks() {
                 )}
               </div>
 
-              {/* Stats */}
               <div className="hidden sm:flex items-center gap-4 text-sm text-slate-500 flex-shrink-0">
                 <span className="flex items-center gap-1">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /></svg>
@@ -247,7 +252,6 @@ export default function ShowPacks() {
                 <span className="font-semibold text-slate-700">{totalPrice.toFixed(2)} €</span>
               </div>
 
-              {/* Menú */}
               <ActionMenu
                 pack={pack}
                 onEdit={() => setEditingPack(pack)}
@@ -265,7 +269,7 @@ export default function ShowPacks() {
               <span className="font-semibold text-slate-700">{totalPrice.toFixed(2)} €</span>
             </div>
 
-            {/* ── Variantes desplegables ── */}
+            {/* Variantes desplegables */}
             {isOpen && (
               <div className="border-t border-slate-100 px-4 py-3 space-y-2">
                 {pack.items?.length > 0 ? (
@@ -274,7 +278,19 @@ export default function ShowPacks() {
                       key={item.id}
                       className="flex items-center gap-3 bg-slate-50 rounded-xl px-3 py-2.5 group"
                     >
+                      {/* Imagen de la variante */}
+                      {item.variant?.image ? (
+                        <img
+                          src={item.variant.image}
+                          alt={item.variant?.sku}
+                          className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-slate-200"
+                        />
+                      ) : (
+                        <ImagePlaceholder />
+                      )}
+
                       <div className={`w-1.5 h-5 rounded-full flex-shrink-0 ${item.variant?.active ? "bg-orange-400" : "bg-slate-300"}`} />
+
                       <div className="flex-1 min-w-0">
                         <p className="text-slate-700 text-sm font-medium truncate">
                           {item.variant?.product?.name || "Producto"}
@@ -284,9 +300,11 @@ export default function ShowPacks() {
                           Cant. {item.quantity} · {item.variant?.price} € u.
                         </p>
                       </div>
+
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${item.variant?.active ? "bg-orange-100 text-orange-600" : "bg-slate-100 text-slate-400"}`}>
                         {item.variant?.active ? "Activo" : "Inactivo"}
                       </span>
+
                       <button
                         onClick={() => removeVariantFromPack(pack.id, item.variant_id)}
                         className="opacity-0 group-hover:opacity-100 transition text-slate-300 hover:text-red-400 flex-shrink-0 p-1 rounded"
@@ -316,7 +334,7 @@ export default function ShowPacks() {
   );
 }
 
-// ── Modal de edición ──────────────────────────────────────────────────────────
+// Modal de edición
 function EditPackModal({ pack, onClose, onSave }) {
   const [name, setName] = useState(pack.name);
   const [description, setDescription] = useState(pack.description || "");
@@ -409,33 +427,56 @@ function EditPackModal({ pack, onClose, onSave }) {
               <p className="text-sm text-slate-400 py-2">Cargando variantes…</p>
             ) : (
               <div className="space-y-2">
-                {items.map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <select
-                      className="flex-1 px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition bg-white"
-                      value={item.variant_id}
-                      onChange={(e) => change(idx, "variant_id", e.target.value)}
-                      required
-                    >
-                      <option value="">Seleccionar variante…</option>
-                      {variants.map((v) => (
-                        <option key={v.id} value={v.id}>{v.display}</option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      min="1"
-                      className="w-20 px-3 py-2.5 border border-slate-200 rounded-xl text-sm text-center focus:ring-2 focus:ring-orange-500 outline-none transition"
-                      value={item.quantity}
-                      onChange={(e) => change(idx, "quantity", parseInt(e.target.value) || 1)}
-                    />
-                    {items.length > 1 && (
-                      <button type="button" onClick={() => removeRow(idx)} className="p-2 rounded-lg hover:bg-red-50 text-slate-300 hover:text-red-400 transition flex-shrink-0">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                      </button>
-                    )}
-                  </div>
-                ))}
+                {items.map((item, idx) => {
+                  const selectedVariant = variants.find((v) => String(v.id) === String(item.variant_id));
+                  return (
+                    <div key={idx} className="flex items-center gap-2">
+                      {/* Preview imagen */}
+                      {selectedVariant?.image ? (
+                        <img
+                          src={selectedVariant.image}
+                          alt={selectedVariant.sku}
+                          className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-slate-200"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                            <circle cx="8.5" cy="8.5" r="1.5" />
+                            <polyline points="21 15 16 10 5 21" />
+                          </svg>
+                        </div>
+                      )}
+
+                      <select
+                        className="flex-1 px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition bg-white"
+                        value={item.variant_id}
+                        onChange={(e) => change(idx, "variant_id", e.target.value)}
+                        required
+                      >
+                        <option value="">Seleccionar variante…</option>
+                        {variants.map((v) => (
+                          <option key={v.id} value={v.id}>{v.display}</option>
+                        ))}
+                      </select>
+
+                      <input
+                        type="number"
+                        min="1"
+                        className="w-20 px-3 py-2.5 border border-slate-200 rounded-xl text-sm text-center focus:ring-2 focus:ring-orange-500 outline-none transition"
+                        value={item.quantity}
+                        onChange={(e) => change(idx, "quantity", parseInt(e.target.value) || 1)}
+                      />
+
+                      {items.length > 1 && (
+                        <button type="button" onClick={() => removeRow(idx)} className="p-2 rounded-lg hover:bg-red-50 text-slate-300 hover:text-red-400 transition flex-shrink-0">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+
                 <button
                   type="button"
                   onClick={addRow}
