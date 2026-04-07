@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\SqlController;
 use App\Http\Controllers\Api\PackController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PaymentController;
 
 use App\Http\Controllers\DashboardController;
 
@@ -87,6 +88,10 @@ Route::post('/packs/disable/{id}', [PackController::class, 'disable']);
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+
+
+Route::post('/checkout', [PaymentController::class, 'checkout']);
+
 
 Route::middleware('auth:sanctum')->group(function () {
 
