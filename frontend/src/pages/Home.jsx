@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react"
+import ProductDetail from "./ProductDetail.jsx"
 
-// ── Constante compartida de clave ──────────────────────────────────────────────
 export const CART_KEY = "tienda_cart"
 
-// ── API ────────────────────────────────────────────────────────────────────────
+
 
 async function getActiveProducts() {
   try {
@@ -13,7 +13,6 @@ async function getActiveProducts() {
     if (!res.ok) throw new Error("Error al obtener productos")
     const data = await res.json()
 
-    // Soporta array plano u objeto ya agrupado
     if (Array.isArray(data)) {
       return data.reduce((acc, v) => {
         if (!acc[v.product_name]) acc[v.product_name] = []
@@ -28,7 +27,6 @@ async function getActiveProducts() {
   }
 }
 
-// ── localStorage ───────────────────────────────────────────────────────────────
 
 function loadCart() {
   try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]") }
@@ -37,15 +35,18 @@ function loadCart() {
 
 function persistCart(cart) {
   localStorage.setItem(CART_KEY, JSON.stringify(cart))
-  // Dispara evento para que el nav se actualice sin recargar
   window.dispatchEvent(new Event("cart-updated"))
 }
 
-// ── Icons ──────────────────────────────────────────────────────────────────────
+
 
 function ProductIcon({ name = "", size = 36 }) {
   const n = name.toLowerCase()
-  const p = { xmlns: "http://www.w3.org/2000/svg", width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.4", strokeLinecap: "round", strokeLinejoin: "round" }
+  const p = {
+    xmlns: "http://www.w3.org/2000/svg", width: size, height: size,
+    viewBox: "0 0 24 24", fill: "none", stroke: "currentColor",
+    strokeWidth: "1.4", strokeLinecap: "round", strokeLinejoin: "round"
+  }
 
   if (n.includes("bomb"))
     return <svg {...p}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
@@ -57,15 +58,26 @@ function ProductIcon({ name = "", size = 36 }) {
   return <svg {...p}><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
 }
 
-// ── ProductCard ────────────────────────────────────────────────────────────────
+function EyeIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  )
+}
 
-function ProductCard({ name, variants, cart, setCart, compact }) {
+
+
+function ProductCard({ name, variants, cart, setCart, compact, onViewDetail }) {
   const [selected, setSelected] = useState(variants[0])
   const [qty, setQty] = useState(1)
 
   const cartItem = cart.find((c) => c.id === selected.id)
 
-  function handleAdd() {
+  function handleAdd(e) {
+    e.stopPropagation()
     setCart((prev) => {
       const existing = prev.find((c) => c.id === selected.id)
       const next = existing
@@ -77,12 +89,25 @@ function ProductCard({ name, variants, cart, setCart, compact }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col overflow-hidden">
+    <div
+      className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col overflow-hidden group"
+    >
 
-      {/* Imagen */}
-      <div className={`relative bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center text-orange-300 ${compact ? "h-40" : "h-52"}`}>
+      <div
+        className={`relative bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center text-orange-300 cursor-pointer ${compact ? "h-40" : "h-52"}`}
+        onClick={() => onViewDetail(name, variants)}
+      >
         <ProductIcon name={name} size={compact ? 30 : 40} />
-        {/* badges de variantes en carrito */}
+
+        <div className="absolute inset-0 bg-orange-500/0 group-hover:bg-orange-500/10 transition-colors duration-200 flex items-center justify-center">
+          <div className="opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-1 group-hover:translate-y-0">
+            <span className="flex items-center gap-1.5 bg-white text-orange-500 text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
+              <EyeIcon /> Ver detalle
+            </span>
+          </div>
+        </div>
+
+        {/* Badges de variantes en carrito */}
         <div className="absolute bottom-2 left-0 right-0 flex flex-wrap gap-1 justify-center px-2">
           {variants.map((v) => {
             const ci = cart.find((c) => c.id === v.id)
@@ -99,9 +124,21 @@ function ProductCard({ name, variants, cart, setCart, compact }) {
       <div className={`flex flex-col flex-1 ${compact ? "p-3 gap-2.5" : "p-4 gap-3"}`}>
 
         {/* Nombre */}
-        <h3 className={`font-bold text-slate-800 leading-snug ${compact ? "text-sm" : "text-base"}`}>
-          {name}
-        </h3>
+        <div className="flex items-start justify-between gap-2">
+          <h3
+            className={`font-bold text-slate-800 leading-snug cursor-pointer hover:text-orange-500 transition-colors ${compact ? "text-sm" : "text-base"}`}
+            onClick={() => onViewDetail(name, variants)}
+          >
+            {name}
+          </h3>
+          <button
+            onClick={() => onViewDetail(name, variants)}
+            className="shrink-0 text-slate-300 hover:text-orange-400 transition-colors"
+            title="Ver detalle"
+          >
+            <EyeIcon />
+          </button>
+        </div>
 
         {/* Selector de variante */}
         <div>
@@ -140,12 +177,11 @@ function ProductCard({ name, variants, cart, setCart, compact }) {
 
         <div className="flex-1" />
 
-        {/* Cantidad + añadir */}
         <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
           <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden shrink-0">
-            <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-8 h-9 flex items-center justify-center text-slate-400 hover:bg-orange-50 hover:text-orange-500 transition-colors text-lg">−</button>
+            <button onClick={(e) => { e.stopPropagation(); setQty((q) => Math.max(1, q - 1)) }} className="w-8 h-9 flex items-center justify-center text-slate-400 hover:bg-orange-50 hover:text-orange-500 transition-colors text-lg">−</button>
             <span className="w-7 text-center text-sm font-bold text-slate-700 select-none">{qty}</span>
-            <button onClick={() => setQty((q) => q + 1)} className="w-8 h-9 flex items-center justify-center text-slate-400 hover:bg-orange-50 hover:text-orange-500 transition-colors text-lg">+</button>
+            <button onClick={(e) => { e.stopPropagation(); setQty((q) => q + 1) }} className="w-8 h-9 flex items-center justify-center text-slate-400 hover:bg-orange-50 hover:text-orange-500 transition-colors text-lg">+</button>
           </div>
           <button
             onClick={handleAdd}
@@ -163,7 +199,7 @@ function ProductCard({ name, variants, cart, setCart, compact }) {
   )
 }
 
-// ── Home ───────────────────────────────────────────────────────────────────────
+
 
 export default function Home() {
   const [grouped, setGrouped] = useState({})
@@ -171,6 +207,8 @@ export default function Home() {
   const [cols, setCols] = useState(3)
   const [cart, setCart] = useState(loadCart)
   const [search, setSearch] = useState("")
+  // null = lista; { name, variants } = detalle
+  const [detail, setDetail] = useState(null)
 
   useEffect(() => {
     getActiveProducts().then((data) => {
@@ -178,6 +216,11 @@ export default function Home() {
       setLoading(false)
     })
   }, [])
+
+  // Si se abre el detalle, hacer scroll al top
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }, [detail])
 
   const entries = Object.entries(grouped).filter(([name]) =>
     name.toLowerCase().includes(search.toLowerCase())
@@ -187,9 +230,20 @@ export default function Home() {
     ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
     : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
 
+
+  if (detail) {
+    return (
+      <ProductDetail
+        name={detail.name}
+        variants={detail.variants}
+        onBack={() => setDetail(null)}
+      />
+    )
+  }
+
   return (
     <div>
-      {/* Cabecera */}
+
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Productos</h1>
@@ -197,7 +251,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -228,7 +281,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Grid */}
       {loading ? (
         <div className={`grid ${gridClass} gap-4`}>
           {Array.from({ length: 6 }).map((_, i) => (
@@ -254,6 +306,7 @@ export default function Home() {
               cart={cart}
               setCart={setCart}
               compact={cols === 4}
+              onViewDetail={(n, v) => setDetail({ name: n, variants: v })}
             />
           ))}
         </div>

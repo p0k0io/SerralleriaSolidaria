@@ -228,7 +228,7 @@ function Stat({ label, value, sub }) {
   );
 }
 
-// ── Componente principal ──────────────────────────────────────────────────────
+
 export default function Graficos() {
   const totalAnual = MONTHLY_SALES.reduce((s, m) => s + m.total, 0);
   const totalMes   = DAILY_SALES.reduce((s, d) => s + d.total, 0);
@@ -238,7 +238,6 @@ export default function Graficos() {
   return (
     <div className="p-6 space-y-5">
 
-      {/* ── Ventas anuales ── */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 border-b border-slate-100">
           <div>
@@ -255,7 +254,7 @@ export default function Graficos() {
         </div>
       </div>
 
-      {/* ── Ventas del mes ── */}
+
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 border-b border-slate-100">
           <div>
