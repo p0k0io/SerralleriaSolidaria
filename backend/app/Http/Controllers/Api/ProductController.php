@@ -75,23 +75,28 @@ class ProductController extends Controller
     }
 
 
-    public function storeWithVariants(Request $request)
+   public function storeWithVariants(Request $request)
     {
+        
         $request->validate([
             'name' => 'required|string',
             'category_id' => 'required|integer',
             'description' => 'nullable|string',
             'manufacturer' => 'nullable|string',
-            'active' => 'boolean',
+            'active' => 'nullable|boolean',
+
             'variants' => 'nullable|array',
+
             'variants.*.sku' => 'nullable|string',
             'variants.*.price' => 'required|numeric',
-            'variants.*.active' => 'boolean'
+            'variants.*.active' => 'nullable|boolean',
+            'variants.*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
         DB::beginTransaction();
 
         try {
+            
             $product = Product::create([
                 'name' => $request->name,
                 'description' => $request->description,
@@ -100,13 +105,22 @@ class ProductController extends Controller
                 'active' => $request->active ?? true
             ]);
 
+            // Crear las variantes
             if ($request->has('variants')) {
-                foreach ($request->variants as $v) {
+                foreach ($request->variants as $key => $v) {
+                    $imagePath = null;
+
+                    // Subir la imagen si existe
+                    if ($request->hasFile("variants.$key.image")) {
+                        $imagePath = $request->file("variants.$key.image")->store('variant_images', 'public');
+                    }
+
                     Variant::create([
                         'product_id' => $product->id,
                         'sku' => $v['sku'] ?? null,
                         'price' => $v['price'],
-                        'active' => $v['active'] ?? true
+                        'active' => $v['active'] ?? true,
+                        'image' => $imagePath
                     ]);
                 }
             }
@@ -152,4 +166,54 @@ class ProductController extends Controller
             'product' => $product
         ]);
     }
+
+/**
+ * @OA\Post(
+ *     path="/api/products-with-variants",
+ *     summary="Crear producto con variantes",
+ *     tags={"Products"},
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\MediaType(
+ *             mediaType="multipart/form-data",
+ *             @OA\Schema(
+ *                 required={"name","category_id"},
+ *                 @OA\Property(property="name", type="string", example="Camiseta"),
+ *                 @OA\Property(property="description", type="string", example="Camiseta deportiva"),
+ *                 @OA\Property(property="manufacturer", type="string", example="Nike"),
+ *                 @OA\Property(property="category_id", type="integer", example=1),
+ *                 @OA\Property(property="active", type="boolean", example=true),
+ *                 
+ *                 @OA\Property(
+ *                     property="variants",
+ *                     type="array",
+ *                     @OA\Items(
+ *                         @OA\Property(property="sku", type="string", example="TSHIRT-RED-M"),
+ *                         @OA\Property(property="price", type="number", format="float", example=19.99),
+ *                         @OA\Property(property="active", type="boolean", example=true),
+ *                         @OA\Property(
+ *                             property="image",
+ *                             type="string",
+ *                             format="binary"
+ *                         )
+ *                     )
+ *                 )
+ *             )
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=201,
+ *         description="Producto y variantes creados correctamente"
+ *     ),
+ *     @OA\Response(
+ *         response=500,
+ *         description="Error del servidor"
+ *     )
+ * )
+ */
+
+
+
+
+    
 }

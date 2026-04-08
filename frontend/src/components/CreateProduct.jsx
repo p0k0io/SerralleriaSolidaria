@@ -7,7 +7,7 @@ export default function CreateProduct() {
     manufacturer: "",
     categoryId: "",
     active: true,
-    variants: [{ sku: "", price: "", active: true }],
+    variants: [{ sku: "", price: "", active: true, image: null }],
   });
   const [message, setMessage] = useState("");
 
@@ -29,37 +29,45 @@ export default function CreateProduct() {
 
   // Enviar formulario
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMessage("");
+  e.preventDefault();
+  setMessage("");
 
-    try {
-      const res = await fetch("http://localhost:8000/api/products-with-variants", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.name,
-          description: form.description,
-          manufacturer: form.manufacturer,
-          category_id: form.categoryId,
-          active: form.active,
-          variants: form.variants.filter(v => v.price !== ""),
-        }),
-      });
-      if (!res.ok) throw new Error("Error al crear producto");
-      await res.json();
-      
-      setForm({
-        name: "",
-        description: "",
-        manufacturer: "",
-        categoryId: "",
-        active: true,
-        variants: [{ sku: "", price: "", active: true }],
-      });
-    } catch (err) {
-      setMessage(err.message);
+  try {
+    const formData = new FormData();
+
+    formData.append("name", form.name);
+    formData.append("description", form.description);
+    formData.append("manufacturer", form.manufacturer);
+    formData.append("category_id", form.categoryId);
+    formData.append("active", form.active ? 1 : 0);
+
+    form.variants.forEach((v, i) => {
+      formData.append(`variants[${i}][sku]`, v.sku || "");
+      formData.append(`variants[${i}][price]`, Number(v.price));
+      formData.append(`variants[${i}][active]`, v.active ? 1 : 0);
+
+      if (v.image) {
+        formData.append(`variants[${i}][image]`, v.image);
+      }
+    });
+
+    const res = await fetch("http://localhost:8000/api/products-with-variants", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      console.log(data);
+      throw new Error("Error al crear producto");
     }
-  };
+
+    await res.json();
+
+  } catch (err) {
+    setMessage(err.message);
+  }
+};
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
@@ -102,9 +110,21 @@ export default function CreateProduct() {
               onChange={e => handleVariantChange(i, "price", e.target.value)}
             />
             <label className="flex items-center space-x-1">
-              <input type="checkbox" checked={v.active} onChange={e => handleVariantChange(i, "active", e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={v.active}
+                onChange={e => handleVariantChange(i, "active", e.target.checked)}
+              />
               <span className="text-slate-700 text-sm">Activo</span>
             </label>
+            
+            {/* Input de imagen */}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={e => handleVariantChange(i, "image", e.target.files[0])}
+            />
+
             {form.variants.length > 1 && (
               <button type="button" className="text-red-600" onClick={() => removeVariant(i)}>Eliminar</button>
             )}

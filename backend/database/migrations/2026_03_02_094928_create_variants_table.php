@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('sku')->unique()->nullable();
             $table->decimal('price', 10, 2);
             $table->boolean('active')->default(true);
+            $table->string('image')->nullable();
             $table->timestamps();
         });
     }

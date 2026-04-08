@@ -8,13 +8,35 @@ use App\Models\Variant;
 
 class VariantController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $variants = Variant::with('product')->get();
+        $query = Variant::with('product');
+
+        // Búsqueda por nombre de producto o SKU
+        if ($request->has('search') && $request->search !== '') {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('sku', 'like', "%{$search}%")
+                  ->orWhereHas('product', function ($q2) use ($search) {
+                      $q2->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $variants = $query->get()->map(function ($variant) {
+            return [
+                'id'      => $variant->id,
+                'sku'     => $variant->sku,
+                'price'   => $variant->price,
+                'active'  => $variant->active,
+                'display' => ($variant->product->name ?? 'Producto') . ' — SKU: ' . $variant->sku,
+                'product' => $variant->product,
+            ];
+        });
+
         return response()->json($variants);
     }
 
-    // ⬇️ AÑADE ESTE MÉTODO ⬇️
     public function show($id)
     {
         $variant = Variant::with('product')->findOrFail($id);
@@ -25,16 +47,16 @@ class VariantController extends Controller
     {
         $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
-            'sku' => 'nullable|string|unique:variants,sku',
-            'price' => 'required|numeric|min:0',
-            'active' => 'boolean'
+            'sku'        => 'nullable|string|unique:variants,sku',
+            'price'      => 'required|numeric|min:0',
+            'active'     => 'boolean',
         ]);
 
         $variant = Variant::create($validated);
 
         return response()->json([
             'message' => 'Variant created',
-            'data' => $variant
+            'data'    => $variant,
         ], 201);
     }
 
@@ -43,16 +65,16 @@ class VariantController extends Controller
         $variant = Variant::findOrFail($id);
 
         $validated = $request->validate([
-            'sku' => 'nullable|string|unique:variants,sku,' . $variant->id,
-            'price' => 'sometimes|numeric|min:0',
-            'active' => 'boolean'
+            'sku'    => 'nullable|string|unique:variants,sku,' . $variant->id,
+            'price'  => 'sometimes|numeric|min:0',
+            'active' => 'boolean',
         ]);
 
         $variant->update($validated);
 
         return response()->json([
             'message' => 'Variant updated',
-            'data' => $variant
+            'data'    => $variant,
         ]);
     }
 
@@ -62,7 +84,7 @@ class VariantController extends Controller
         $variant->delete();
 
         return response()->json([
-            'message' => 'Variant deleted'
+            'message' => 'Variant deleted',
         ]);
     }
 
@@ -73,14 +95,18 @@ class VariantController extends Controller
             ->get()
             ->map(function ($variant) {
                 return [
-                    'id' => $variant->id,
-                    'sku' => $variant->sku,
-                    'price' => $variant->price,
+                    'id'           => $variant->id,
+                    'sku'          => $variant->sku,
+                    'price'        => $variant->price,
+                    'active'       => $variant->active,
                     'product_name' => $variant->product->name,
-                    'display' => $variant->product->name . ' - ' . $variant->sku . ' ($' . $variant->price . ')'
+                    'display'      => $variant->product->name . ' — ' . $variant->sku . ' (' . $variant->price . ' €)',
+                    'product'      => $variant->product,
+                    'display' => $variant->product->name . ' - ' . $variant->sku . ' ($' . $variant->price . ')',
+                    'image'=>$variant->image
                 ];
             });
-        
+
         return response()->json($variants);
     }
 
@@ -90,17 +116,17 @@ class VariantController extends Controller
         $variant->update(['active' => false]);
 
         return response()->json([
-            'message' => 'Variante deshabilitada'
+            'message' => 'Variante deshabilitada',
         ]);
     }
 
     public function enable($id)
     {
         $variant = Variant::findOrFail($id);
-        $variant ->update(['active' => true]);
+        $variant->update(['active' => true]);
 
         return response()->json([
-            'message' => 'Variante activada'
+            'message' => 'Variante activada',
         ]);
     }
 }

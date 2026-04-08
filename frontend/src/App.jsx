@@ -1,7 +1,9 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 
-import Login from "./pages/Login"
-import Register from "./pages/Register"
+import Login from "./components/auth/Login"
+import Register from "./components/auth/Register"
+
+
 import Home from "./pages/Home"
 
 import Dashboard from "./pages/admin/Dashboard"
@@ -13,6 +15,7 @@ import CartPage from "./pages/admin/CartPage"
 import ClientLayout from "./layouts/ClientLayout"
 import AdminLayout from "./layouts/AdminLayout"
 import DashboardLayout from "./layouts/DashboardLayout"
+import Carrito from "./pages/admin/Carrito"
 
 
 import { CartProvider } from "./components/shoppingCart/CartContext"
@@ -28,6 +31,7 @@ function App() {
           {/* CLIENTE */}
           <Route path="/" element={<ClientLayout />}>
             <Route index element={<Home />} />
+            <Route path="/carrito" element={<Carrito />} />
           </Route>
 
           {/* AUTH */}
