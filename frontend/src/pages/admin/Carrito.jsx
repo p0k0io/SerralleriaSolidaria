@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useAuth } from "../../context/AuthContext"
 
 const CART_KEY = "tienda_cart"
 
@@ -170,6 +171,9 @@ export default function CartPage() {
   const [stripeError, setStripeError]     = useState("")
 
 
+  const { user } = useAuth()
+
+  console.log(user)
   useEffect(() => {
     const sync = () => setCart(loadCart())
     window.addEventListener("cart-updated", sync)
@@ -206,7 +210,7 @@ export default function CartPage() {
       const res = await fetch("http://localhost:8000/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: cart }),
+        body: JSON.stringify({ items: cart, user: user.id}),
       })
       const data = await res.json()
       window.location.href = data.url  

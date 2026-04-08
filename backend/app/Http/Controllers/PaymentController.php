@@ -33,7 +33,7 @@ class PaymentController extends Controller
             'payment_method_types' => ['card'],
             'line_items' => $line_items,
             'mode' => 'payment',
-            'success_url' => env('APP_URL') . ':5173/success',
+            'success_url' => env('APP_URL') . ':8000/success',
             'cancel_url' => env('APP_URL') . ':5173/carrito',
         ]);
 
@@ -41,4 +41,9 @@ class PaymentController extends Controller
             'url' => $session->url
         ]);
     }
+
+    public function successs(){
+
+    }
+
 }

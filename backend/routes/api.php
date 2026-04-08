@@ -91,6 +91,7 @@ Route::post('/login', [AuthController::class, 'login']);
 
 
 Route::post('/checkout', [PaymentController::class, 'checkout']);
+Route::post('/success', [PaymentController::class, 'success']);
 
 
 Route::middleware('auth:sanctum')->group(function () {
