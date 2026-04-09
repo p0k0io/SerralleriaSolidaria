@@ -87,7 +87,30 @@ class VariantController extends Controller
             'message' => 'Variant deleted',
         ]);
     }
+    
+    public function getOutstandingVariants()
+    {
+        $variants = Variant::with('product')
+            ->where('active', true)
+            ->get()
+            ->map(function ($variant) {
+                return [
+                    'id'           => $variant->id,
+                    'sku'          => $variant->sku,
+                    'price'        => $variant->price,
+                    'active'       => $variant->active,
+                    'destacado'     => $variant->destacado,
+                    'product_name' => $variant->product->name,
+                    'display'      => $variant->product->name . ' — ' . $variant->sku . ' (' . $variant->price . ' €)',
+                    'product'      => $variant->product,
+                    'display' => $variant->product->name . ' - ' . $variant->sku . ' ($' . $variant->price . ')',
+                    'image'=>$variant->image
+                ];
+            });
 
+        return response()->json($variants);
+    }
+    
     public function getActiveVariants()
     {
         $variants = Variant::with('product')
