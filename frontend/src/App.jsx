@@ -1,37 +1,37 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import Login from "./components/auth/Login"
-import Register from "./components/auth/Register"
+import Login from "./components/auth/Login";
+import Register from "./components/auth/Register";
 
+import Home from "./pages/Home";
+import CustomRequestPage from "./pages/CustomRequestPage";
 
-import Home from "./pages/Home"
+import Dashboard from "./pages/admin/Dashboard";
+import Products from "./pages/admin/Products";
+import Packs from "./pages/admin/Packs";
+import Categories from "./pages/admin/Categories";
+import CartPage from "./pages/admin/CartPage";
+import Carrito from "./pages/admin/Carrito";
 
-import Dashboard from "./pages/admin/Dashboard"
-import Products from "./pages/admin/Products" 
-import Packs from "./pages/admin/Packs"
-import Categories from "./pages/admin/Categories"
-import CartPage from "./pages/admin/CartPage"
+import ClientLayout from "./layouts/ClientLayout";
+import AdminLayout from "./layouts/AdminLayout";
+import RequestsList from "./pages/admin/RequestsList";
 
-import ClientLayout from "./layouts/ClientLayout"
-import AdminLayout from "./layouts/AdminLayout"
-import DashboardLayout from "./layouts/DashboardLayout"
-import Carrito from "./pages/admin/Carrito"
-
-
-import { CartProvider } from "./components/shoppingCart/CartContext"
+import { CartProvider } from "./components/shoppingCart/CartContext";
 
 function App() {
   return (
     <BrowserRouter>
-
       <CartProvider>
-
         <Routes>
-        
+
           {/* CLIENTE */}
           <Route path="/" element={<ClientLayout />}>
             <Route index element={<Home />} />
-            <Route path="/carrito" element={<Carrito />} />
+
+            <Route path="solicitud" element={<CustomRequestPage />} />
+
+            <Route path="carrito" element={<Carrito />} />
           </Route>
 
           {/* AUTH */}
@@ -45,14 +45,13 @@ function App() {
             <Route path="packs" element={<Packs />} />
             <Route path="categories" element={<Categories />} />
             <Route path="cart" element={<CartPage />} />
+            <Route path="requests" element={<RequestsList />} />
           </Route>
 
         </Routes>
-
       </CartProvider>
-
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;
