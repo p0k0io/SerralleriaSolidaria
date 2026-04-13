@@ -7,12 +7,10 @@ use App\Http\Controllers\Api\VariantController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\SqlController;
 use App\Http\Controllers\Api\PackController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PaymentController;
+
 use App\Http\Controllers\DashboardController;
-
-
-Route::middleware(['cors'])->group(function () {
-    Route::post('/products-with-variants', [\App\Http\Controllers\ProductController::class, 'storeWithVariants']);
-});
 
 Route::get('/test', function () {
     return response()->json([
@@ -23,6 +21,9 @@ Route::get('/test', function () {
 
 // Obtener todos los productos (activos e inactivos)
 Route::get('/products', [ProductController::class, 'index']);
+
+Route::get('/variants/active', [VariantController::class, 'getActiveVariants']);
+
 
 // Obtener un producto con sus variantes
 Route::get('/products/{id}', [ProductController::class, 'show']);
@@ -79,3 +80,24 @@ Route::post('/execute-sql', [SqlController::class, 'execute']);
 Route::apiResource('packs', PackController::class);
 
 Route::get('/variants/active', [VariantController::class, 'getActiveVariants']);
+
+Route::post('/packs/enable/{id}', [PackController::class, 'enable']);
+Route::post('/packs/disable/{id}', [PackController::class, 'disable']);
+
+//Autentificacion
+
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+
+
+Route::post('/checkout', [PaymentController::class, 'checkout']);
+
+
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
+
+    Route::post('/logout', [AuthController::class, 'logout']);
+});

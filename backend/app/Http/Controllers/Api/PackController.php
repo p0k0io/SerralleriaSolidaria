@@ -168,8 +168,31 @@ class PackController extends Controller
             return response()->json(['error' => 'Pack no encontrado'], 404);
         }
 
-        $pack->delete();
+        $pack->active(false);
 
         return response()->json(null, 204);
+    }
+
+
+    /**
+     * Activar un pack
+     */
+    public function enable($id)
+    {
+        $pack = Pack::findOrFail($id);
+        $pack->active = true;
+        $pack->save();
+        return response()->json($pack);
+    }
+
+    /**
+     * Desactivar un pack
+     */
+    public function disable($id)
+    {
+        $pack = Pack::findOrFail($id);
+        $pack->active = false;
+        $pack->save();
+        return response()->json($pack);
     }
 }
