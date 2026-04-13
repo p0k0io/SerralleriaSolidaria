@@ -1,148 +1,281 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+// ── ICONOS ────────────────────────────────────────────────────────────────────
+const PlusIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"
+    strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);
+
+const ChevronIcon = ({ open }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+    strokeLinecap="round" strokeLinejoin="round" width="16" height="16"
+    style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.25s ease" }}>
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
+const CheckIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+    strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+
+const AlertIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+    strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </svg>
+);
+
+// ── FIELD WRAPPER ─────────────────────────────────────────────────────────────
+function Field({ label, children }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-[11px] font-semibold text-stone-400 uppercase tracking-wider">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+const inputClass =
+  "w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-stone-50 text-sm text-stone-800 placeholder-stone-300 " +
+  "focus:outline-none focus:ring-2 focus:ring-amber-300 focus:border-amber-400 focus:bg-white transition-all duration-150";
+
+// ── SPINNER ───────────────────────────────────────────────────────────────────
+function Spinner() {
+  return (
+    <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+    </svg>
+  );
+}
+
+// ── MAIN ──────────────────────────────────────────────────────────────────────
 export default function CreateCategory() {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", parent_id: null });
+  const [categories, setCategories] = useState([]);
+  const [form, setForm] = useState({ name: "", description: "", parent_id: "" });
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingCats, setLoadingCats] = useState(false);
 
   const handleChange = (field, value) => setForm({ ...form, [field]: value });
 
-  function resetForm() {
-    setForm({ name: "", description: "", parent_id: null });
+  const resetForm = () => {
+    setForm({ name: "", description: "", parent_id: "" });
     setMessage("");
-  }
+  };
+
+  const fetchCategories = async () => {
+    setLoadingCats(true);
+    try {
+      const res = await fetch("http://localhost:8000/api/categories");
+      const data = await res.json();
+      setCategories(Array.isArray(data) ? data : data.data || []);
+    } catch (err) {
+      console.error("Error loading categories", err);
+    } finally {
+      setLoadingCats(false);
+    }
+  };
+
+  useEffect(() => { fetchCategories(); }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
-    if (!form.name.trim()) { setMessage("Por favor completa el nombre de la categoría"); return; }
+
+    if (!form.name.trim()) {
+      setMessage("Por favor completa el nombre de la categoría");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch("http://localhost:8000/api/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          parent_id: form.parent_id ? parseInt(form.parent_id) : null,
+        }),
       });
+
       const data = await res.json();
+
       if (!res.ok) {
         const msg = data.message || Object.values(data.errors || {}).flat().join(", ");
         throw new Error(msg);
       }
-      setMessage(`✓ Categoría "${data.name}" creada correctamente`);
+
+      setMessage(`success:${data.name}`);
       resetForm();
-      setTimeout(() => { setOpen(false); setMessage(""); }, 1800);
+      await fetchCategories();
+
+      setTimeout(() => {
+        setOpen(false);
+        setMessage("");
+      }, 1400);
     } catch (err) {
-      setMessage(err.message);
+      setMessage(`error:${err.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const isSuccess = message.startsWith("✓");
+  const isSuccess = message.startsWith("success:");
+  const isError = message.startsWith("error:");
+  const successName = isSuccess ? message.replace("success:", "") : "";
+  const errorText = isError ? message.replace("error:", "") : message;
 
   return (
-    <div className={`bg-white rounded-2xl border transition-all duration-200 ${
-      open ? "border-orange-200 shadow-md" : "border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200"
-    }`}>
-
-      {/* Cabecera / toggle */}
+    <div
+      className={`bg-white rounded-2xl border overflow-hidden transition-all duration-300 ${
+        open
+          ? "border-amber-200 shadow-lg shadow-amber-50"
+          : "border-stone-100 shadow-sm hover:shadow-md hover:border-stone-200"
+      }`}
+      style={{ boxShadow: open ? "0 4px 24px rgba(251,146,60,0.10), 0 1px 4px rgba(0,0,0,0.04)" : undefined }}
+    >
+      {/* ── HEADER TOGGLE ── */}
       <button
         type="button"
-        onClick={() => { setOpen((p) => !p); setMessage(""); }}
-        className="w-full flex items-center gap-4 p-4 text-left"
+        onClick={() => { setOpen(!open); if (open) resetForm(); }}
+        className="w-full flex items-center gap-4 px-5 py-4 text-left group"
       >
-        <div className={`w-2 h-10 rounded-full flex-shrink-0 transition-colors ${open ? "bg-orange-500" : "bg-slate-200"}`} />
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-slate-800">Crear nueva categoría</p>
-          <p className="text-slate-400 text-sm">Nombre, descripción y categoría padre</p>
+        {/* Accent strip */}
+        <div
+          className={`w-1 h-10 rounded-full transition-all duration-300 ${
+            open ? "bg-gradient-to-b from-amber-400 to-orange-500" : "bg-stone-200 group-hover:bg-stone-300"
+          }`}
+        />
+
+        {/* Icon badge */}
+        <div
+          className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
+            open
+              ? "bg-orange-500 text-white shadow-sm"
+              : "bg-stone-100 text-stone-400 group-hover:bg-amber-50 group-hover:text-amber-500"
+          }`}
+        >
+          <PlusIcon />
         </div>
-        <div className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors flex-shrink-0 ${
-          open ? "bg-orange-100 text-orange-600" : "bg-slate-100 text-slate-400"
-        }`}>
-          <svg
-            width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-            className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
+
+        {/* Text */}
+        <div className="flex-1">
+          <p className={`font-semibold text-sm transition-colors ${open ? "text-stone-900" : "text-stone-700"}`}>
+            Crear categoría
+          </p>
+          <p className="text-stone-400 text-xs mt-0.5">Nombre, descripción y categoría padre</p>
         </div>
+
+        {/* Chevron */}
+        <span className="text-stone-300 group-hover:text-stone-400 transition-colors">
+          <ChevronIcon open={open} />
+        </span>
       </button>
 
-      {/* Formulario */}
+      {/* ── FORM ── */}
       {open && (
-        <div className="border-t border-slate-100 px-6 py-5">
+        <div className="border-t border-stone-100 px-5 py-5 space-y-4">
 
-          {message && (
-            <div className={`mb-5 flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium ${
-              isSuccess
-                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                : "bg-red-50 text-red-600 border border-red-200"
-            }`}>
-              {isSuccess
-                ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              }
-              {message}
+          {/* Feedback */}
+          {(isSuccess || isError || (!isSuccess && !isError && message)) && (
+            <div
+              className={`flex items-start gap-2.5 px-3.5 py-3 rounded-xl text-xs font-medium border transition-all ${
+                isSuccess
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : "bg-red-50 text-red-600 border-red-100"
+              }`}
+            >
+              <span className="mt-0.5 flex-shrink-0">
+                {isSuccess ? <CheckIcon /> : <AlertIcon />}
+              </span>
+              <span>
+                {isSuccess
+                  ? <>Categoría <strong>"{successName}"</strong> creada correctamente</>
+                  : errorText}
+              </span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nombre *</label>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Field label="Nombre *">
               <input
-                type="text"
-                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
-                placeholder="Ej: Herramientas manuales"
+                className={inputClass}
+                placeholder="Ej: Electrónica, Ropa, Deportes…"
                 value={form.name}
                 onChange={(e) => handleChange("name", e.target.value)}
-                required
+                autoFocus
               />
-            </div>
+            </Field>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Descripción</label>
+            <Field label="Descripción">
               <textarea
-                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition resize-none"
-                placeholder="Descripción de la categoría..."
-                rows="3"
+                className={`${inputClass} resize-none h-20`}
+                placeholder="Descripción opcional de la categoría…"
                 value={form.description}
                 onChange={(e) => handleChange("description", e.target.value)}
               />
-            </div>
+            </Field>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
-                ID Categoría Padre <span className="normal-case font-normal text-slate-400">(opcional)</span>
-              </label>
-              <input
-                type="number"
-                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
-                placeholder="ID de la categoría padre"
-                value={form.parent_id || ""}
-                onChange={(e) => handleChange("parent_id", e.target.value ? parseInt(e.target.value) : null)}
-              />
-            </div>
+            <Field label="Categoría padre">
+              <select
+                className={inputClass}
+                value={form.parent_id}
+                onChange={(e) => handleChange("parent_id", e.target.value)}
+                disabled={loadingCats}
+              >
+                <option value="">Sin categoría padre</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+            </Field>
 
-            <div className="flex justify-end gap-2 pt-2">
+            {/* Actions */}
+            <div className="flex items-center gap-2 pt-1">
               <button
                 type="button"
-                onClick={() => { resetForm(); setOpen(false); }}
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-xl transition"
+                onClick={() => { setOpen(false); resetForm(); }}
+                className="px-4 py-2.5 rounded-xl border border-stone-200 text-sm font-medium text-stone-600
+                  hover:bg-stone-50 hover:border-stone-300 transition-colors duration-150"
               >
                 Cancelar
               </button>
+
               <button
                 type="submit"
                 disabled={loading}
-                className="px-5 py-2 text-sm font-semibold bg-orange-600 hover:bg-orange-500 text-white rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white
+                  bg-amber-500
+                  hover:bg-orange-400
+                  active:bg-amber-600
+                  disabled:opacity-60 disabled:cursor-not-allowed
+                  shadow-sm shadow-orange-200 transition-all duration-150"
               >
-                {loading ? "Creando…" : "Crear categoría"}
+                {loading ? (
+                  <>
+                    <Spinner />
+                    Creando…
+                  </>
+                ) : (
+                  <>
+                    <PlusIcon />
+                    Crear categoría
+                  </>
+                )}
               </button>
             </div>
-
           </form>
         </div>
       )}

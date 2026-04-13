@@ -48,17 +48,28 @@ class VariantController extends Controller
     {
         $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
-            'sku'        => 'nullable|string|unique:variants,sku',
-            'price'      => 'required|numeric|min:0',
-            'active'     => 'boolean',
-            'destacado'  => 'boolean',
+            'sku' => 'nullable|string|unique:variants,sku',
+            'price' => 'required|numeric|min:0',
+            'active' => 'boolean',
+            'destacado' => 'boolean',
+            'image' => 'nullable|image|mimes:jpg,png,jpeg|max:2048'
         ]);
 
-        $variant = Variant::create($validated);
+        $path = null;
+
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('variant_images', 'public');
+        }
+
+        $variant = Variant::create([
+            ...$validated,
+            'active' => $validated['active'] ?? true,
+            'image' => $path
+        ]);
 
         return response()->json([
             'message' => 'Variant created',
-            'data'    => $variant,
+            'data' => $variant
         ], 201);
     }
 
@@ -67,27 +78,39 @@ class VariantController extends Controller
         $variant = Variant::findOrFail($id);
 
         $validated = $request->validate([
-            'sku'    => 'nullable|string|unique:variants,sku,' . $variant->id,
-            'price'  => 'sometimes|numeric|min:0',
+            'sku' => 'nullable|string|unique:variants,sku,' . $variant->id,
+            'price' => 'sometimes|numeric|min:0',
             'active' => 'boolean',
             'destacado' => 'boolean',
+            'image' => 'nullable|image|mimes:jpg,png,jpeg|max:2048'
         ]);
 
-        $variant->update($validated);
+        $data = $validated;
+
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('variant_images', 'public');
+        }
+
+        $variant->update($data);
 
         return response()->json([
             'message' => 'Variant updated',
-            'data'    => $variant,
+            'data' => $variant
         ]);
     }
 
-    public function destroy($id)
+   public function destroy($id)
     {
         $variant = Variant::findOrFail($id);
+
+        if ($variant->image) {
+            \Storage::disk('public')->delete($variant->image);
+        }
+
         $variant->delete();
 
         return response()->json([
-            'message' => 'Variant deleted',
+            'message' => 'Variant deleted'
         ]);
     }
 
@@ -118,6 +141,18 @@ class VariantController extends Controller
             });
 
         return response()->json($variants);
+    }
+
+    public function toggleActive($id)
+    {
+        $variant = Variant::findOrFail($id);
+        $variant->active = !$variant->active;
+        $variant->save();
+
+        return response()->json([
+            'message' => 'Variant toggled',
+            'active' => $variant->active
+        ]);
     }
 
     public function disable($id)

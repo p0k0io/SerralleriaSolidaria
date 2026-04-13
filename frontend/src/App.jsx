@@ -19,6 +19,7 @@ import ClientLayout from "./layouts/ClientLayout"
 import AdminLayout from "./layouts/AdminLayout"
 import DashboardLayout from "./layouts/DashboardLayout"
 import Carrito from "./pages/admin/Carrito"
+import AttributeManager from "./components/AttributeManager"
 
 
 import { CartProvider } from "./components/shoppingCart/CartContext"
@@ -39,6 +40,7 @@ function App() {
             <Route path="faq" element={<FAQ />} />
             <Route path="categorias" element={<Categories />} />
             <Route path="carrito" element={<Carrito />} />
+            <Route path="atr" element={<AttributeManager />} />
           </Route>
 
           {/* AUTH */}
