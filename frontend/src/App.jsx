@@ -10,7 +10,7 @@ import Dashboard from "./pages/admin/Dashboard"
 import Products from "./pages/admin/Products" 
 import Packs from "./pages/admin/Packs"
 import Categories from "./pages/admin/Categories"
-import CartPage from "./pages/admin/CartPage"
+
 
 import ClientLayout from "./layouts/ClientLayout"
 import AdminLayout from "./layouts/AdminLayout"
@@ -46,7 +46,6 @@ function App() {
             <Route path="products" element={<Products />} />
             <Route path="packs" element={<Packs />} />
             <Route path="categories" element={<Categories />} />
-            <Route path="cart" element={<CartPage />} />
           </Route>
 
         </Routes>

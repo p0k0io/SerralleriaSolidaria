@@ -47,6 +47,7 @@ Route::prefix('products')->group(function () {
     Route::post('/disable/{id}', [ProductController::class, 'disable']);
 
     Route::post('/products-with-variants', [ProductController::class, 'storeWithVariants']);
+    Route::post('/{id}/variants', [ProductController::class, 'addVariant']);
 });
 
 /*
@@ -67,6 +68,8 @@ Route::prefix('variants')->group(function () {
 
     Route::post('/disable/{id}', [VariantController::class, 'disable']);
     Route::post('/enable/{id}', [VariantController::class, 'enable']);
+
+    Route::post('/{id}/toggle', [VariantController::class, 'toggleActive']);
 });
 
 /*

@@ -35,12 +35,7 @@ export default function Login() {
     <div className="min-h-screen w-full flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-6">
-          <div className="bg-white border border-orange-100 shadow-sm rounded-2xl px-5 py-2.5 flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
-            </div>
-            <span className="text-orange-600 font-bold text-lg tracking-tight">Tienda</span>
-          </div>
+          
         </div>
         <div className="bg-white border border-orange-100 shadow-sm rounded-2xl overflow-hidden">
           <div className="bg-orange-500 px-8 py-6">

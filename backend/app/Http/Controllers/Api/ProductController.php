@@ -142,6 +142,33 @@ class ProductController extends Controller
         }
     }
 
+    public function addVariant(Request $request, $productId)
+    {
+        $product = Product::findOrFail($productId);
+
+        $validated = $request->validate([
+            'sku' => 'nullable|string|unique:variants,sku',
+            'price' => 'required|numeric|min:0',
+            'active' => 'boolean',
+            'image' => 'nullable|image|max:2048'
+        ]);
+
+        $path = $request->hasFile('image')
+            ? $request->file('image')->store('variant_images', 'public')
+            : null;
+
+        $variant = $product->variants()->create([
+            ...$validated,
+            'image' => $path,
+            'active' => $validated['active'] ?? true
+        ]);
+
+        return response()->json([
+            'message' => 'Variant added',
+            'data' => $variant
+        ]);
+    }
+
     public function enable($id)
     {
         $product = Product::findOrFail($id);
