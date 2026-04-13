@@ -242,6 +242,11 @@ export function ShowCategories() {
               </p>
             )}
           </div>
+
+          <ActionMenu
+            onEdit={() => setEditingCategory(cat)}
+            onDelete={() => deleteCategory(cat.id)}
+          />
         </div>
       </div>
 

@@ -100,6 +100,7 @@ export default function CreateCategory() {
     }
 
     setLoading(true);
+
     try {
       const res = await fetch("http://localhost:8000/api/categories", {
         method: "POST",
@@ -224,7 +225,9 @@ export default function CreateCategory() {
                 className={`${inputClass} resize-none h-20`}
                 placeholder="Descripción opcional de la categoría…"
                 value={form.description}
-                onChange={(e) => handleChange("description", e.target.value)}
+                onChange={(e) =>
+                  handleChange("description", e.target.value)
+                }
               />
             </Field>
 

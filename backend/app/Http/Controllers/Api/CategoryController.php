@@ -30,7 +30,9 @@ class CategoryController extends Controller
 
             $categories = $query->get(['id', 'name', 'description', 'parent_id']);
 
-            return response()->json($categories);
+            return response()->json([
+                'categories' => $categories
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al obtener categorías',
@@ -55,7 +57,9 @@ class CategoryController extends Controller
                 return response()->json(['message' => 'Categoría no encontrada'], 404);
             }
 
-            return response()->json($category);
+            return response()->json([
+                'category' => $category
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al obtener la categoría',
@@ -81,7 +85,12 @@ class CategoryController extends Controller
 
         try {
             $category = Category::create($validated);
-            return response()->json($category, 201);
+
+            return response()->json([
+                'message' => 'Categoría creada correctamente',
+                'category' => $category
+            ], 201);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al crear la categoría',
@@ -113,7 +122,12 @@ class CategoryController extends Controller
 
         try {
             $category->update($validated);
-            return response()->json($category);
+
+            return response()->json([
+                'message' => 'Categoría actualizada correctamente',
+                'category' => $category
+            ]);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al actualizar la categoría',
@@ -135,7 +149,11 @@ class CategoryController extends Controller
 
         try {
             $category->delete();
-            return response()->json(['message' => 'Categoría eliminada correctamente']);
+
+            return response()->json([
+                'message' => 'Categoría eliminada correctamente'
+            ]);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al eliminar la categoría',
