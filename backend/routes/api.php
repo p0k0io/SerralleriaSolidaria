@@ -32,6 +32,9 @@ Route::get('/test', function () {
 // Obtener todos los productos (activos e inactivos)
 Route::get('/products', [ProductController::class, 'index']);
 
+// Obtener productos destacados
+Route::get('/products/featured', [ProductController::class, 'featured']);
+
 // Obtener un producto con sus variantes
 Route::get('/products/{id}', [ProductController::class, 'show']);
 
