@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
-use App\Models\AttributeType;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -31,12 +30,8 @@ class CategoryController extends Controller
 
             $categories = $query->get(['id', 'name', 'description', 'parent_id']);
 
-            // 🔥 añadimos atributos globales
-            $attributes = AttributeType::with('values')->get();
-
             return response()->json([
-                'categories' => $categories,
-                'attributes' => $attributes
+                'categories' => $categories
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -62,12 +57,8 @@ class CategoryController extends Controller
                 return response()->json(['message' => 'Categoría no encontrada'], 404);
             }
 
-            // 🔥 añadimos atributos globales también aquí
-            $attributes = AttributeType::with('values')->get();
-
             return response()->json([
-                'category' => $category,
-                'attributes' => $attributes
+                'category' => $category
             ]);
         } catch (\Exception $e) {
             return response()->json([

@@ -7,6 +7,7 @@ const EditIcon = () => (
     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
   </svg>
 );
+
 const TrashIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
     <polyline points="3 6 5 6 21 6" />
@@ -15,6 +16,7 @@ const TrashIcon = () => (
     <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
   </svg>
 );
+
 const FolderIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="12" height="12">
     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
@@ -57,7 +59,6 @@ function ActionMenu({ onEdit, onDelete }) {
       <button
         onClick={() => setShow((p) => !p)}
         className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition text-slate-500 hover:text-slate-700"
-        title="Opciones"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
           <circle cx="5" cy="12" r="2" />
@@ -89,7 +90,6 @@ function ActionMenu({ onEdit, onDelete }) {
 // ── Componente principal ──────────────────────────────────────────────────────
 export function ShowCategories() {
   const [categories, setCategories] = useState([]);
-  const [attributes, setAttributes] = useState([]); // 🔥 NUEVO
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refresh, setRefresh] = useState(false);
@@ -100,12 +100,12 @@ export function ShowCategories() {
       const res = await fetch("http://localhost:8000/api/categories", {
         headers: { Accept: "application/json" },
       });
+
       if (!res.ok) throw new Error("Error al obtener categorías");
 
       const data = await res.json();
+      setCategories(data.categories);
 
-      setCategories(data.categories);      // 🔥 AJUSTE (backend nuevo formato)
-      setAttributes(data.attributes);      // 🔥 NUEVO
     } catch (err) {
       setError(err.message);
     } finally {
@@ -116,94 +116,60 @@ export function ShowCategories() {
   useEffect(() => { getCategories(); }, [refresh]);
 
   async function deleteCategory(id) {
-    if (!confirm("¿Seguro que quieres eliminar esta categoría? Esta acción no se puede deshacer.")) return;
+    if (!confirm("¿Seguro que quieres eliminar esta categoría?")) return;
+
     try {
       const res = await fetch(`http://localhost:8000/api/categories/${id}`, {
         method: "DELETE",
         headers: { Accept: "application/json" },
       });
+
       if (!res.ok) throw new Error("Error al eliminar la categoría");
+
       setRefresh((p) => !p);
-    } catch (e) { console.error(e.message); }
+
+    } catch (e) {
+      console.error(e.message);
+    }
   }
 
   async function handleUpdateCategory(updatedData) {
     try {
       const res = await fetch(`http://localhost:8000/api/categories/${editingCategory.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
         body: JSON.stringify(updatedData),
       });
-      if (!res.ok) throw new Error("Error al actualizar la categoría");
+
+      if (!res.ok) throw new Error("Error al actualizar");
+
       setRefresh((p) => !p);
       setEditingCategory(null);
-    } catch (e) { console.error(e.message); }
+
+    } catch (e) {
+      console.error(e.message);
+    }
   }
 
-  if (loading) return (
-    <div className="flex items-center justify-center p-12">
-      <div className="flex items-center gap-3 text-slate-400">
-        <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-        </svg>
-        <span className="text-sm">Cargando categorías…</span>
-      </div>
-    </div>
-  );
-
-  if (error) return (
-    <div className="m-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
-      ⚠ {error}
-    </div>
-  );
-
-  if (categories.length === 0) return (
-    <p className="p-6 text-slate-400 text-sm text-center">No hay categorías disponibles.</p>
-  );
+  if (loading) return <p className="p-6">Cargando...</p>;
+  if (error) return <p className="p-6 text-red-500">{error}</p>;
 
   return (
     <div className="p-6 space-y-3">
       {categories.map((cat) => (
-        <div
-          key={cat.id}
-          className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all duration-200"
-        >
-          <div className="flex items-center gap-4 p-4">
-            {/* Indicador lateral */}
-            <div className="w-2 h-10 rounded-full flex-shrink-0 bg-orange-500" />
-
-            {/* Info principal */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-semibold text-slate-800 truncate">{cat.name}</h3>
-                {cat.children?.length > 0 && (
-                  <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-slate-100 text-slate-500">
-                    {cat.children.length} sub
-                  </span>
-                )}
-              </div>
-              {cat.description && (
-                <p className="text-slate-500 text-sm truncate mt-0.5">{cat.description}</p>
-              )}
-              {cat.parent && (
-                <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
-                  <FolderIcon />
-                  en {cat.parent.name}
-                </p>
-              )}
-            </div>
-
-            {/* ID badge */}
-            <span className="hidden sm:inline-flex text-xs px-2.5 py-1 rounded-full bg-slate-50 text-slate-400 border border-slate-100 font-mono flex-shrink-0">
-              #{cat.id}
-            </span>
-
-            {/* Menú */}
-            <ActionMenu
-              onEdit={() => setEditingCategory(cat)}
-              onDelete={() => deleteCategory(cat.id)}
-            />
+        <div key={cat.id} className="bg-white p-4 rounded-xl shadow flex justify-between">
+          <div>
+            <h3 className="font-bold">{cat.name}</h3>
+            <p className="text-sm text-gray-500">{cat.description}</p>
           </div>
+
+          <ActionMenu
+            onEdit={() => setEditingCategory(cat)}
+            onDelete={() => deleteCategory(cat.id)}
+          />
         </div>
       ))}
 
@@ -218,79 +184,38 @@ export function ShowCategories() {
   );
 }
 
-// ── Modal de edición ──────────────────────────────────────────────────────────
+// ── Modal ─────────────────────────────────────────────────────────────────────
 function EditCategoryModal({ category, onClose, onSave }) {
   const [name, setName] = useState(category.name);
   const [description, setDescription] = useState(category.description || "");
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (!name.trim()) { alert("El nombre es obligatorio"); return; }
-    onSave({ name: name.trim(), description: description.trim() });
+    onSave({ name, description });
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+      <div className="bg-white p-6 rounded-xl w-96">
+        <h2 className="font-bold mb-4">Editar categoría</h2>
 
-        {/* Header */}
-        <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100">
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-8 rounded-full bg-orange-500 flex-shrink-0" />
-            <div>
-              <h2 className="text-base font-bold text-slate-800">Editar categoría</h2>
-              <p className="text-slate-400 text-xs">{category.name}</p>
-            </div>
+        <form onSubmit={handleSubmit}>
+          <input
+            className="w-full mb-2 p-2 border"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+
+          <textarea
+            className="w-full mb-4 p-2 border"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+
+          <div className="flex justify-end gap-2">
+            <button onClick={onClose}>Cancelar</button>
+            <button type="submit">Guardar</button>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition text-slate-400"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nombre *</label>
-            <input
-              type="text"
-              className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Descripción</label>
-            <textarea
-              className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition resize-none"
-              rows="3"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-xl transition"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2 text-sm font-semibold bg-orange-600 hover:bg-orange-500 text-white rounded-xl transition"
-            >
-              Guardar cambios
-            </button>
-          </div>
-
         </form>
       </div>
     </div>
