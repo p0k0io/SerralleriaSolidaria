@@ -38,6 +38,7 @@ class ProductSeeder extends Seeder
             'sku' => 'BOM-SEC-001',
             'price' => 25.50,
             'active' => true,
+            'destacado' => true,
         ]);
 
         $attrType1 = AttributeType::firstOrCreate(['name' => 'Material']);
@@ -117,6 +118,7 @@ class ProductSeeder extends Seeder
             'sku' => 'ESC-PROT-002',
             'price' => 16.50,
             'active' => true,
+            'destacado' => true,
         ]);
         $attrValue2b = AttributeValue::firstOrCreate([
             'attribute_type_id' => $attrType2->id,
@@ -160,6 +162,7 @@ class ProductSeeder extends Seeder
             'sku' => 'CER-EMB-001',
             'price' => 40.00,
             'active' => true,
+            'destacado' => true,
         ]);
         $attrType3 = AttributeType::firstOrCreate(['name' => 'Tipo de llave']);
         $attrValue3 = AttributeValue::firstOrCreate([

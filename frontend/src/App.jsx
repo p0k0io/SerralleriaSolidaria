@@ -5,11 +5,14 @@ import Register from "./components/auth/Register"
 
 
 import Home from "./pages/Home"
+import Information from "./pages/Information"
+import FAQ from "./pages/FAQ"
+import Categories from "./pages/Categories"
 
 import Dashboard from "./pages/admin/Dashboard"
 import Products from "./pages/admin/Products" 
 import Packs from "./pages/admin/Packs"
-import Categories from "./pages/admin/Categories"
+import CategoryAdmin from "./pages/admin/Categories"
 import CartPage from "./pages/admin/CartPage"
 
 import ClientLayout from "./layouts/ClientLayout"
@@ -31,7 +34,11 @@ function App() {
           {/* CLIENTE */}
           <Route path="/" element={<ClientLayout />}>
             <Route index element={<Home />} />
-            <Route path="/carrito" element={<Carrito />} />
+            <Route path="productos" element={<Home />} />
+            <Route path="informacion" element={<Information />} />
+            <Route path="faq" element={<FAQ />} />
+            <Route path="categorias" element={<Categories />} />
+            <Route path="carrito" element={<Carrito />} />
           </Route>
 
           {/* AUTH */}
@@ -43,7 +50,7 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="products" element={<Products />} />
             <Route path="packs" element={<Packs />} />
-            <Route path="categories" element={<Categories />} />
+            <Route path="categories" element={<CategoryAdmin />} />
             <Route path="cart" element={<CartPage />} />
           </Route>
 

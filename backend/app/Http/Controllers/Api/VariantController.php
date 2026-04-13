@@ -29,6 +29,7 @@ class VariantController extends Controller
                 'sku'     => $variant->sku,
                 'price'   => $variant->price,
                 'active'  => $variant->active,
+                'destacado' => $variant->destacado,
                 'display' => ($variant->product->name ?? 'Producto') . ' — SKU: ' . $variant->sku,
                 'product' => $variant->product,
             ];
@@ -50,6 +51,7 @@ class VariantController extends Controller
             'sku'        => 'nullable|string|unique:variants,sku',
             'price'      => 'required|numeric|min:0',
             'active'     => 'boolean',
+            'destacado'  => 'boolean',
         ]);
 
         $variant = Variant::create($validated);
@@ -68,6 +70,7 @@ class VariantController extends Controller
             'sku'    => 'nullable|string|unique:variants,sku,' . $variant->id,
             'price'  => 'sometimes|numeric|min:0',
             'active' => 'boolean',
+            'destacado' => 'boolean',
         ]);
 
         $variant->update($validated);
@@ -90,7 +93,7 @@ class VariantController extends Controller
 
     public function getActiveVariants()
     {
-        $variants = Variant::with('product')
+        $variants = Variant::with(['product.category', 'attributes.attributeValue.type'])
             ->where('active', true)
             ->get()
             ->map(function ($variant) {
@@ -99,11 +102,18 @@ class VariantController extends Controller
                     'sku'          => $variant->sku,
                     'price'        => $variant->price,
                     'active'       => $variant->active,
+                    'destacado'    => $variant->destacado,
                     'product_name' => $variant->product->name,
-                    'display'      => $variant->product->name . ' — ' . $variant->sku . ' (' . $variant->price . ' €)',
                     'product'      => $variant->product,
-                    'display' => $variant->product->name . ' - ' . $variant->sku . ' ($' . $variant->price . ')',
-                    'image'=>$variant->image
+                    'image'        => $variant->image,
+                    'attributes'   => $variant->attributes->map(function ($attribute) {
+                        return [
+                            'type'  => $attribute->attributeValue->type->name ?? null,
+                            'value' => $attribute->attributeValue->value ?? null,
+                        ];
+                    })->filter(function ($item) {
+                        return $item['type'] && $item['value'];
+                    })->values(),
                 ];
             });
 

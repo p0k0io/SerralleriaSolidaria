@@ -14,7 +14,7 @@ class ProductController extends Controller
 
     public function index()
     {
-        $products = Product::with('variants')->get();
+        $products = Product::with(['variants', 'category'])->get();
         return response()->json($products);
     }
 
@@ -165,6 +165,15 @@ class ProductController extends Controller
             'message' => 'Producto desactivado',
             'product' => $product
         ]);
+    }
+
+    public function featured()
+    {
+        $products = Product::with('variants')->whereHas('variants', function($q) {
+            $q->where('destacado', true)->where('active', true);
+        })->get();
+
+        return response()->json($products);
     }
 
 /**

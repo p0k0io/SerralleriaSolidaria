@@ -6,8 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Variant extends Model
 {
-    protected $fillable = ['product_id', 'sku', 'price', 'active', 'image'];
+    protected $fillable = ['product_id', 'sku', 'price', 'active', 'image', 'destacado'];
     
+    protected $casts = [
+        'destacado' => 'boolean',
+    ];
+
     public function product()
     {
         return $this->belongsTo(Product::class);
