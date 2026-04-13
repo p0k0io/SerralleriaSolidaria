@@ -67,6 +67,7 @@ Route::prefix('variants')->group(function () {
     Route::post('/enable/{id}', [VariantController::class, 'enable']);
 
     Route::post('/{id}/toggle', [VariantController::class, 'toggleActive']);
+    Route::post('/{id}/toggle-featured', [VariantController::class, 'toggleFeatured']);
 });
 
 /*

@@ -29,7 +29,7 @@ class VariantController extends Controller
                 'sku'     => $variant->sku,
                 'price'   => $variant->price,
                 'active'  => $variant->active,
-                'destacado' => $variant->destacado,
+                'featured' => $variant->destacado,
                 'display' => ($variant->product->name ?? 'Producto') . ' — SKU: ' . $variant->sku,
                 'product' => $variant->product,
             ];
@@ -41,7 +41,16 @@ class VariantController extends Controller
     public function show($id)
     {
         $variant = Variant::with('product')->findOrFail($id);
-        return response()->json($variant);
+        return response()->json([
+            'id'      => $variant->id,
+            'sku'     => $variant->sku,
+            'price'   => $variant->price,
+            'active'  => $variant->active,
+            'featured' => $variant->destacado,
+            'image'   => $variant->image,
+            'product' => $variant->product,
+            'product_id' => $variant->product_id,
+        ]);
     }
 
     public function store(Request $request)
@@ -125,7 +134,7 @@ class VariantController extends Controller
                     'sku'          => $variant->sku,
                     'price'        => $variant->price,
                     'active'       => $variant->active,
-                    'destacado'    => $variant->destacado,
+                    'featured'     => $variant->destacado,
                     'product_name' => $variant->product->name,
                     'product'      => $variant->product,
                     'image'        => $variant->image,
@@ -152,6 +161,18 @@ class VariantController extends Controller
         return response()->json([
             'message' => 'Variant toggled',
             'active' => $variant->active
+        ]);
+    }
+
+    public function toggleFeatured($id)
+    {
+        $variant = Variant::findOrFail($id);
+        $variant->destacado = !$variant->destacado;
+        $variant->save();
+
+        return response()->json([
+            'message' => 'Featured toggled',
+            'featured' => $variant->destacado
         ]);
     }
 

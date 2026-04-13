@@ -101,7 +101,7 @@ function EditProductForm({ product, onSave, onCancel }) {
   );
 }
 
-function VariantRow({ variant, onToggle, onDelete, onUpdate }) {
+function VariantRow({ variant, onToggle, onDelete, onUpdate, onToggleFeatured }) {
   const [editing, setEditing] = useState(false);
   const [sku, setSku] = useState(variant.sku);
   const [price, setPrice] = useState(variant.price);
@@ -153,6 +153,9 @@ function VariantRow({ variant, onToggle, onDelete, onUpdate }) {
 
       {!editing && (
         <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
+          <IconBtn onClick={() => onToggleFeatured(variant.id, variant.featured)} title={variant.featured ? "Desmarcar destacado" : "Destacar"} variant={variant.featured ? "orange" : "default"}>
+            ★
+          </IconBtn>
           <IconBtn onClick={() => onToggle(variant.id, variant.active)} title={variant.active ? "Desactivar" : "Activar"}>
             {variant.active ? "Off" : "On"}
           </IconBtn>
@@ -248,6 +251,11 @@ function ProductCard({ product, onReload }) {
     onReload();
   }
 
+  async function toggleFeatured(id, currentFeatured) {
+    await fetch(`${API}/variants/${id}/toggle-featured`, { method: "POST" });
+    onReload();
+  }
+
   async function deleteVariant(id) {
     if (!confirm("¿Eliminar esta variante?")) return;
     await fetch(`${API}/variants/${id}`, { method: "DELETE" });
@@ -328,6 +336,7 @@ function ProductCard({ product, onReload }) {
                 onToggle={toggleVariant}
                 onDelete={deleteVariant}
                 onUpdate={updateVariant}
+                onToggleFeatured={toggleFeatured}
               />
             ))
           ) : (

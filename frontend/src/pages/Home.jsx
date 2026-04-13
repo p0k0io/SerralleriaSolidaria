@@ -26,22 +26,18 @@ async function getActiveProducts() {
 
 async function getFeaturedProducts() {
   try {
-    const res = await fetch("http://localhost:8000/api/products/featured", {
+    const res = await fetch("http://localhost:8000/api/variants/active", {
       headers: { "Content-Type": "application/json" },
     })
     if (!res.ok) throw new Error("Error al obtener productos destacados")
     const data = await res.json()
     if (Array.isArray(data)) {
-      return data.reduce((acc, product) => {
-        const featuredVariants = product.variants.filter(v => v.destacado && v.active)
-        if (featuredVariants.length > 0) acc[product.name] = featuredVariants
-        return acc
-      }, {})
+      return data.filter(v => v.featured && v.active)
     }
-    return data
+    return []
   } catch (e) {
     console.error(e.message)
-    return {}
+    return []
   }
 }
 
@@ -121,30 +117,30 @@ function FilterSelect({ value, onChange, options, placeholder }) {
 }
 
 // ─── Tarjeta del carrusel de destacados ──────────────────────────────────────
-function FeaturedCard({ name, variants, cart, setCart, onViewDetail }) {
-  const [selected, setSelected] = useState(variants[0])
+function FeaturedCard({ variant, cart, setCart, onViewDetail }) {
   const [qty, setQty] = useState(1)
-  const cartItem = cart.find((c) => c.id === selected.id)
+  const cartItem = cart.find((c) => c.id === variant.id)
+  const productName = variant.product_name
 
   function handleAdd(e) {
     e.stopPropagation()
     setCart((prev) => {
-      const existing = prev.find((c) => c.id === selected.id)
+      const existing = prev.find((c) => c.id === variant.id)
       const next = existing
-        ? prev.map((c) => c.id === selected.id ? { ...c, qty: c.qty + qty } : c)
-        : [...prev, { id: selected.id, sku: selected.sku, product_name: name, price: selected.price, qty }]
+        ? prev.map((c) => c.id === variant.id ? { ...c, qty: c.qty + qty } : c)
+        : [...prev, { id: variant.id, sku: variant.sku, product_name: productName, price: variant.price, qty }]
       persistCart(next)
       return next
     })
   }
 
   return (
-    <div className="w-64 shrink-0 bg-white rounded-2xl border border-amber-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col overflow-hidden group">
+    <div className="w-72 shrink-0 bg-white rounded-2xl border border-amber-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col overflow-hidden group">
       <div
-        className="relative bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center text-orange-300 cursor-pointer h-40"
-        onClick={() => onViewDetail(name, variants)}
+        className="relative bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center text-orange-300 cursor-pointer h-60"
+        onClick={() => onViewDetail(productName, [variant])}
       >
-        <ProductIcon name={name} size={34} />
+        <ProductIcon name={productName} size={44} />
         <div className="absolute top-2 left-2">
           <span className="flex items-center gap-1 bg-amber-400 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
             Destacado
@@ -157,58 +153,29 @@ function FeaturedCard({ name, variants, cart, setCart, onViewDetail }) {
             </span>
           </div>
         </div>
-        <div className="absolute bottom-2 left-0 right-0 flex flex-wrap gap-1 justify-center px-2">
-          {variants.map((v) => {
-            const ci = cart.find((c) => c.id === v.id)
-            if (!ci) return null
-            return (
-              <span key={v.id} className="text-[10px] bg-orange-500 text-white font-bold px-1.5 py-0.5 rounded-md font-mono">
-                {v.sku.split("-").slice(-1)[0]} ×{ci.qty}
-              </span>
-            )
-          })}
-        </div>
+        {cartItem && (
+          <div className="absolute bottom-2 left-0 right-0 flex flex-wrap gap-1 justify-center px-2">
+            <span className="text-[10px] bg-orange-500 text-white font-bold px-1.5 py-0.5 rounded-md font-mono">
+              {variant.sku.split("-").slice(-1)[0]} ×{cartItem.qty}
+            </span>
+          </div>
+        )}
       </div>
       <div className="flex flex-col flex-1 p-3 gap-2.5">
         <div className="flex items-start justify-between gap-2">
           <h3
             className="font-bold text-slate-800 leading-snug cursor-pointer hover:text-orange-500 transition-colors text-sm"
-            onClick={() => onViewDetail(name, variants)}
+            onClick={() => onViewDetail(productName, [variant])}
           >
-            {name}
+            {productName}
           </h3>
-          <button onClick={() => onViewDetail(name, variants)} className="shrink-0 text-slate-300 hover:text-orange-400 transition-colors" title="Ver detalle">
+          <button onClick={() => onViewDetail(productName, [variant])} className="shrink-0 text-slate-300 hover:text-orange-400 transition-colors" title="Ver detalle">
             <EyeIcon />
           </button>
         </div>
-        <div>
-          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1.5">Variante</p>
-          <div className="flex flex-wrap gap-1.5">
-            {variants.map((v) => {
-              const inCart = cart.find((c) => c.id === v.id)
-              const isActive = selected.id === v.id
-              return (
-                <button
-                  key={v.id}
-                  onClick={() => { setSelected(v); setQty(1) }}
-                  className={`relative text-xs font-mono px-2.5 py-1.5 rounded-xl border transition-all ${
-                    isActive
-                      ? "bg-orange-500 border-orange-500 text-white shadow-sm"
-                      : "bg-white border-slate-200 text-slate-600 hover:border-orange-300 hover:text-orange-500"
-                  }`}
-                >
-                  {v.sku.split("-").slice(-1)[0]}
-                  {inCart && !isActive && (
-                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-green-400 border-2 border-white" />
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        </div>
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-mono text-slate-400">{selected.sku}</span>
-          <span className="font-extrabold text-orange-500 text-base">${parseFloat(selected.price).toFixed(2)}</span>
+          <span className="text-[10px] font-mono text-slate-400">{variant.sku}</span>
+          <span className="font-extrabold text-orange-500 text-lg">${parseFloat(variant.price).toFixed(2)}</span>
         </div>
         <div className="flex-1" />
         <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
@@ -236,12 +203,11 @@ function FeaturedCard({ name, variants, cart, setCart, onViewDetail }) {
 // ─── Carrusel de destacados ───────────────────────────────────────────────────
 function FeaturedCarousel({ featured, cart, setCart, onViewDetail }) {
   const scrollRef = useRef(null)
-  const entries = Object.entries(featured)
-  if (entries.length === 0) return null
+  if (featured.length === 0) return null
 
   function scroll(dir) {
     if (!scrollRef.current) return
-    scrollRef.current.scrollBy({ left: dir === "left" ? -280 : 280, behavior: "smooth" })
+    scrollRef.current.scrollBy({ left: dir === "left" ? -320 : 320, behavior: "smooth" })
   }
 
   return (
@@ -249,7 +215,7 @@ function FeaturedCarousel({ featured, cart, setCart, onViewDetail }) {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-lg font-extrabold text-slate-800 tracking-tight">Productos Destacados</h2>
-          <p className="text-slate-400 text-xs mt-0.5">{entries.length} productos seleccionados</p>
+          <p className="text-slate-400 text-xs mt-0.5">{featured.length} variantes seleccionadas</p>
         </div>
         <div className="flex gap-2">
           <button onClick={() => scroll("left")} className="w-8 h-8 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:border-orange-400 hover:text-orange-500 transition-all">
@@ -261,8 +227,8 @@ function FeaturedCarousel({ featured, cart, setCart, onViewDetail }) {
         </div>
       </div>
       <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2 scroll-smooth" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-        {entries.map(([name, variants]) => (
-          <FeaturedCard key={name} name={name} variants={variants} cart={cart} setCart={setCart} onViewDetail={onViewDetail} />
+        {featured.map((variant) => (
+          <FeaturedCard key={variant.id} variant={variant} cart={cart} setCart={setCart} onViewDetail={onViewDetail} />
         ))}
       </div>
       <div className="mt-6 border-t border-slate-100" />

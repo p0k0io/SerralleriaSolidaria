@@ -15,13 +15,64 @@ class ProductController extends Controller
     public function index()
     {
         $products = Product::with(['variants', 'category'])->get();
+        
+        $products = $products->map(function ($product) {
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'description' => $product->description,
+                'manufacturer' => $product->manufacturer,
+                'category_id' => $product->category_id,
+                'active' => $product->active,
+                'created_at' => $product->created_at,
+                'updated_at' => $product->updated_at,
+                'category' => $product->category,
+                'variants' => $product->variants->map(function ($variant) {
+                    return [
+                        'id' => $variant->id,
+                        'product_id' => $variant->product_id,
+                        'sku' => $variant->sku,
+                        'price' => $variant->price,
+                        'active' => $variant->active,
+                        'featured' => $variant->destacado,
+                        'image' => $variant->image,
+                        'created_at' => $variant->created_at,
+                        'updated_at' => $variant->updated_at,
+                    ];
+                }),
+            ];
+        });
+        
         return response()->json($products);
     }
 
     public function show($id)
     {
         $product = Product::with('variants')->findOrFail($id);
-        return response()->json($product);
+        
+        return response()->json([
+            'id' => $product->id,
+            'name' => $product->name,
+            'description' => $product->description,
+            'manufacturer' => $product->manufacturer,
+            'category_id' => $product->category_id,
+            'active' => $product->active,
+            'created_at' => $product->created_at,
+            'updated_at' => $product->updated_at,
+            'variants' => $product->variants->map(function ($variant) {
+                return [
+                    'id' => $variant->id,
+                    'product_id' => $variant->product_id,
+                    'sku' => $variant->sku,
+                    'price' => $variant->price,
+                    'active' => $variant->active,
+                    'featured' => $variant->destacado,
+                    'image' => $variant->image,
+                    'created_at' => $variant->created_at,
+                    'updated_at' => $variant->updated_at,
+                ];
+            }),
+        ]);
     }
 
     
