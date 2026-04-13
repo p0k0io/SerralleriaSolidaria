@@ -100,6 +100,7 @@ export default function ShowProducts() {
       if (!res.ok) throw new Error("Error al obtener productos");
       const data = await res.json();
       setProducts(data);
+      console.log(data)
     } catch (err) {
       setError(err.message);
     } finally {
@@ -145,12 +146,16 @@ export default function ShowProducts() {
             </button>
           </div>
 
-          {/* Variantes */}
           {openProduct === product.name && (
             <div className="mt-4 bg-slate-50 rounded-lg p-3 space-y-2">
               {product.variants?.length > 0 ? (
                 product.variants.map(variant => (
                   <div key={variant.sku} className="flex justify-between items-center bg-white rounded-md p-2 shadow-sm">
+                    <img
+                      src={`http://localhost:8000/storage/${variant.image}`}
+                      alt={variant.sku}
+                      className="w-12 h-12 object-cover rounded"
+                    />
                     <p className="text-slate-700 font-medium">{variant.sku}</p>
                     <p className="text-slate-600">{variant.price} €</p>
                     <p className={`font-medium ${variant.active ? "text-orange-600" : "text-slate-400"}`}>
@@ -161,6 +166,7 @@ export default function ShowProducts() {
                         :
                         <button onClick={() => enableVariant(variant.id)}>Activar</button>
                     }
+              
                     </div>
                 ))
               ) : (

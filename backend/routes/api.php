@@ -9,6 +9,11 @@ use App\Http\Controllers\SqlController;
 use App\Http\Controllers\Api\PackController;
 use App\Http\Controllers\DashboardController;
 
+
+Route::middleware(['cors'])->group(function () {
+    Route::post('/products-with-variants', [\App\Http\Controllers\ProductController::class, 'storeWithVariants']);
+});
+
 Route::get('/test', function () {
     return response()->json([
         'status' => 'ok',
@@ -47,10 +52,11 @@ Route::put('/variants/{id}', [VariantController::class, 'update']);
 
 // Borrar variante
 Route::delete('/variants/{id}', [VariantController::class, 'destroy']);
+//Desactivar Variante
 Route::post('/variants/disable/{id}', [VariantController::class, 'disable']);
-
+//Activar Variante
 Route::post('/variants/enable/{id}', [VariantController::class, 'enable']);
-
+//Activar producto
 Route::post('/products/enable/{id}', [ProductController::class, 'enable']);
 
 Route::get('/categories', [CategoryController::class, 'index']);
