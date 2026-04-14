@@ -9,11 +9,6 @@ class AttributeValue extends Model
 {
     protected $fillable = ['attribute_type_id', 'value'];
 
-    protected $fillable = [
-        'attribute_type_id',
-        'value'
-    ];
-
     /**
      * Cada valor pertenece a un tipo de atributo
      */

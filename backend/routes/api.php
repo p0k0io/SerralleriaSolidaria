@@ -56,7 +56,7 @@ Route::post('/products/{id}/variants', [ProductController::class, 'addVariant'])
 Route::prefix('variants')->group(function () {
 
     Route::get('/', [VariantController::class, 'index']);
-    Route::get('/active', [VariantController::class, 'getActiveVariants']); // ✅ única
+    Route::get('/active', [VariantController::class, 'getActiveVariants']);
     Route::get('/{id}', [VariantController::class, 'show']);
 
     Route::post('/', [VariantController::class, 'store']);

@@ -1,51 +1,36 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-
 import Login from "./components/auth/Login";
 import Register from "./components/auth/Register";
-
 import Home from "./pages/Home";
 import CustomRequestPage from "./pages/CustomRequestPage";
-
-import Home from "./pages/Home"
-import Information from "./pages/Information"
-import FAQ from "./pages/FAQ"
-import Categories from "./pages/Categories"
-
-import Dashboard from "./pages/admin/Dashboard"
-import Products from "./pages/admin/Products" 
-import Packs from "./pages/admin/Packs"
-import CategoryAdmin from "./pages/admin/Categories"
-
-
-import ClientLayout from "./layouts/ClientLayout"
-import AdminLayout from "./layouts/AdminLayout"
-import DashboardLayout from "./layouts/DashboardLayout"
-import Carrito from "./pages/admin/Carrito"
-import AttributeManager from "./components/AttributeManager"
+import Information from "./pages/Information";
+import FAQ from "./pages/FAQ";
+import Categories from "./pages/Categories";
+import Dashboard from "./pages/admin/Dashboard";
+import Products from "./pages/admin/Products";
+import Packs from "./pages/admin/Packs";
+import CategoryAdmin from "./pages/admin/Categories";
+import ClientLayout from "./layouts/ClientLayout";
+import AdminLayout from "./layouts/AdminLayout";
+import Carrito from "./pages/admin/Carrito";
+import AttributeManager from "./components/AttributeManager";
 import RequestsList from "./pages/admin/RequestsList";
-
-
-import { CartProvider } from "./components/shoppingCart/CartContext"
+import { CartProvider } from "./components/shoppingCart/CartContext";
 
 function App() {
   return (
     <BrowserRouter>
       <CartProvider>
         <Routes>
-
           {/* CLIENTE */}
           <Route path="/" element={<ClientLayout />}>
             <Route index element={<Home />} />
-            <Route path="productos" element={<Home />} />
             <Route path="informacion" element={<Information />} />
             <Route path="faq" element={<FAQ />} />
             <Route path="categorias" element={<Categories />} />
             <Route path="carrito" element={<Carrito />} />
             <Route path="atr" element={<AttributeManager />} />
-
             <Route path="solicitud" element={<CustomRequestPage />} />
-
-            <Route path="carrito" element={<Carrito />} />
           </Route>
 
           {/* AUTH */}
@@ -58,10 +43,9 @@ function App() {
             <Route path="products" element={<Products />} />
             <Route path="packs" element={<Packs />} />
             <Route path="categories" element={<CategoryAdmin />} />
-            <Route path="cart" element={<CartPage />} />
+            <Route path="cart" element={<Carrito />} />
             <Route path="requests" element={<RequestsList />} />
           </Route>
-
         </Routes>
       </CartProvider>
     </BrowserRouter>
