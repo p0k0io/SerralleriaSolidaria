@@ -13,6 +13,9 @@ use App\Http\Controllers\Api\AttributeValueController;
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\RequestController;
+
+
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SqlController;
 
@@ -34,7 +37,13 @@ Route::get('/products', [ProductController::class, 'index']);
 
 // Obtener productos destacados
 Route::get('/products/featured', [ProductController::class, 'featured']);
+Route::get('/variants/active', [VariantController::class, 'getActiveVariants']);
 
+
+Route::get('/requests', [RequestController::class, 'index']);
+Route::post('/requests', [RequestController::class, 'store']);
+Route::put('/requests/{id}', [RequestController::class, 'updateStatus']);
+Route::put('/requests/{id}/notes', [RequestController::class, 'updateNotes']);
 // Obtener un producto con sus variantes
 Route::get('/products/{id}', [ProductController::class, 'show']);
 
