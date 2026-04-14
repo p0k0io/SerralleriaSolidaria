@@ -156,9 +156,8 @@ Route::post('/login', [AuthController::class, 'login']);
 | CHECKOUT
 |--------------------------------------------------------------------------
 */
-
-Route::post('/checkout', [PaymentController::class, 'checkout']);
-
+Route::get('/stripe/session/{id}', [PaymentController::class, 'checkSession']);
+Route::post('/stripe/webhook', [PaymentController::class, 'webhook']);
 /*
 |--------------------------------------------------------------------------
 | PROTECTED ROUTES (SANCTUM)
@@ -172,4 +171,6 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    Route::post('/checkout', [PaymentController::class, 'checkout']);
 });

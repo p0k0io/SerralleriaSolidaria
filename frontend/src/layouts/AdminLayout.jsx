@@ -51,6 +51,7 @@ const navItems = [
   { to: "/admin/packs", label: "Packs", icon: BookStack },
   { to: "/admin/categories", label: "Categorías", icon: Tag },
   { to: "/admin/requests", label: "Solicitudes", icon: BookStack },
+  { to: "/admin/atributos", label: "Atributos", icon: Tag },
 ];
 
 /* ── Layout ── */

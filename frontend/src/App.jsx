@@ -1,21 +1,30 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Login from "./components/auth/Login";
-import Register from "./components/auth/Register";
-import Home from "./pages/Home";
+import { BrowserRouter, Routes, Route } from "react-router-dom"
+
+import Login from "./components/auth/Login"
+import Register from "./components/auth/Register"
+
+
+import Home from "./pages/Home"
 import CustomRequestPage from "./pages/CustomRequestPage";
-import Information from "./pages/Information";
-import FAQ from "./pages/FAQ";
-import Categories from "./pages/Categories";
-import Dashboard from "./pages/admin/Dashboard";
-import Products from "./pages/admin/Products";
-import Packs from "./pages/admin/Packs";
-import CategoryAdmin from "./pages/admin/Categories";
-import ClientLayout from "./layouts/ClientLayout";
-import AdminLayout from "./layouts/AdminLayout";
-import Carrito from "./pages/admin/Carrito";
-import AttributeManager from "./components/AttributeManager";
+import Information from "./pages/Information"
+import FAQ from "./pages/FAQ"
+import Categories from "./pages/Categories"
+
+import Dashboard from "./pages/admin/Dashboard"
+import Products from "./pages/admin/Products" 
+import Packs from "./pages/admin/Packs"
+import CategoryAdmin from "./pages/admin/Categories"
+
+
+import ClientLayout from "./layouts/ClientLayout"
+import AdminLayout from "./layouts/AdminLayout"
+import DashboardLayout from "./layouts/DashboardLayout"
+import Carrito from "./pages/admin/Carrito"
+import AttributeManager from "./components/AttributeManager"
+
 import RequestsList from "./pages/admin/RequestsList";
-import { CartProvider } from "./components/shoppingCart/CartContext";
+import Success from "./pages/Success"
+import { CartProvider } from "./components/shoppingCart/CartContext"
 
 function App() {
   return (
@@ -46,6 +55,8 @@ function App() {
             <Route path="cart" element={<Carrito />} />
             <Route path="requests" element={<RequestsList />} />
           </Route>
+          <Route path="/success" element={<Success />} />
+
         </Routes>
       </CartProvider>
     </BrowserRouter>
