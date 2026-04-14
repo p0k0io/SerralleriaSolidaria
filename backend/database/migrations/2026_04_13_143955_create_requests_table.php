@@ -1,4 +1,5 @@
 <?php
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -9,15 +10,18 @@ return new class extends Migration {
         Schema::create('requests', function (Blueprint $table) {
             $table->id();
 
-            // CLIENTE
+            // ================= CLIENTE =================
             $table->string('name');
             $table->string('email');
+            $table->string('phone')->nullable(); // 👈 NUEVO
+
+            // ================= DESCRIPCIÓN =================
             $table->text('description');
 
-            // IMAGEN DEL PROBLEMA
+            // ================= IMAGEN =================
             $table->string('image')->nullable();
 
-            // ESTADO CRM
+            // ================= ESTADO CRM =================
             $table->enum('status', [
                 'new',
                 'contacted',
@@ -28,8 +32,8 @@ return new class extends Migration {
                 'rejected'
             ])->default('new');
 
-            // NOTAS ADMIN
-            $table->text('notes')->nullable();
+            // ================= NOTA INTERNA ADMIN =================
+            $table->text('admin_note')->nullable(); // 👈 NUEVO (MEJOR NOMBRE QUE "notes")
 
             $table->timestamps();
         });
