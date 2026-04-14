@@ -85,7 +85,7 @@ class PaymentController extends Controller
             // 🧾 CREAR ORDER
             $order = Order::create([
                 'user_id' => $user->id,
-                'status' => 'pending',
+                'status' => 'completed',
                 'full_name' => $request->full_name,
                 'email' => $request->email,
                 'phone' => $request->phone,
@@ -120,7 +120,7 @@ class PaymentController extends Controller
             Payment::create([
                 'order_id' => $order->id,
                 'provider' => 'stripe',
-                'payment_status' => 'pending',
+                'payment_status' => 'paid',
                 'transaction_id' => $session->id,
             ]);
 
