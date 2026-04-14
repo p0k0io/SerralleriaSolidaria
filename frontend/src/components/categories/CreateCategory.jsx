@@ -80,9 +80,9 @@ export default function CreateCategory() {
     try {
       const res = await fetch("http://localhost:8000/api/categories");
       const data = await res.json();
-      setCategories(Array.isArray(data) ? data : data.data || []);
+      setCategories(Array.isArray(data) ? data : data.categories || data.data || []);
     } catch (err) {
-      console.error("Error loading categories", err);
+      console.error("CreateCategory: Error loading categories", err);
     } finally {
       setLoadingCats(false);
     }
@@ -118,7 +118,7 @@ export default function CreateCategory() {
         throw new Error(msg);
       }
 
-      setMessage(`success:${data.name}`);
+      setMessage(`success:${data.category.name}`);
       resetForm();
       await fetchCategories();
 

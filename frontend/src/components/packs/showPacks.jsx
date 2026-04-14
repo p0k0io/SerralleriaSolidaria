@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef } from "react";
-import CreatePack from "./createPacks-simple";
 
 function ActionMenu({ pack, onEdit, onToggle, onViewVariants, onDelete, isOpen, setOpenPack }) {
   const [show, setShow] = useState(false);

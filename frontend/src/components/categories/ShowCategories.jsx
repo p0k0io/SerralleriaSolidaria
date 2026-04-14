@@ -196,11 +196,12 @@ export function ShowCategories() {
     try {
       setLoading(true);
       const res = await fetch("http://localhost:8000/api/categories");
-      if (!res.ok) throw new Error("Error cargando categorías");
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       const data = await res.json();
-      setCategories(Array.isArray(data) ? data : data.data || []);
+      setCategories(Array.isArray(data) ? data : data.categories || data.data || []);
       setError(null);
     } catch (e) {
+      console.error("ShowCategories: Error fetching categories:", e);
       setError(e.message);
     } finally {
       setLoading(false);
@@ -245,8 +246,8 @@ export function ShowCategories() {
           </div>
 
           <ActionMenu
-            onEdit={() => setEditingCategory(cat)}
-            onDelete={() => deleteCategory(cat.id)}
+            onEdit={() => setEditing(null)}
+            onDelete={() => {}}
           />
         </div>
       </div>
