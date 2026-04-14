@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react"
+import { Link } from "react-router-dom"
 import ProductDetail from "./ProductDetail.jsx"
 
 export const CART_KEY = "tienda_cart"
@@ -503,6 +504,8 @@ export default function Home() {
             </button>
           ))}
         </div>
+      </div>
+
       {/* CTA personalizado */}
       <div className="relative mb-8 bg-white border border-orange-200 rounded-2xl p-5 flex items-center justify-between gap-4 overflow-hidden">
 

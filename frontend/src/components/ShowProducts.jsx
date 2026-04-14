@@ -359,12 +359,17 @@ export default function ShowProducts() {
   const reload = () => setRefresh((p) => !p);
 
   useEffect(() => {
+    console.log("ShowProducts: useEffect triggered");
     (async () => {
       try {
         setLoading(true);
+        console.log("ShowProducts: fetching products");
         const res = await fetch(`${API}/products`);
+        console.log("ShowProducts: fetch response", res);
         if (!res.ok) throw new Error("Error al obtener productos");
-        setProducts(await res.json());
+        const data = await res.json();
+        console.log("ShowProducts: data received", data);
+        setProducts(data);
       } catch (err) {
         setError(err.message);
       } finally {

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import CreateCategory from "./CreateCategory";
 
 // ── ICONOS ────────────────────────────────────────────────────────────────────
 const EditIcon = () => (
@@ -251,7 +252,7 @@ export function ShowCategories() {
       </div>
 
       {/* Content */}
-      <div className="px-6 pb-10 space-y-2.5">
+      <div className="max-w-3xl mx-auto px-6 pb-10 space-y-3">
         {loading ? (
           <>
             <SkeletonCard />

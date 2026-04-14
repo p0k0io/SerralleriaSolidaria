@@ -7,8 +7,8 @@ export default function Products(){
         <div className="p-6 space-y-6">
             <h1 className="text-2xl font-semibold text-slate-800">Productos</h1>
 
-            <ShowProducts />
             <CreateProduct />
+            <ShowProducts />
         </div>
     );
 }
