@@ -231,7 +231,8 @@ export default function CartPage() {
   const [stripeLoading, setStripeLoading] = useState(false)
   const [stripeError, setStripeError] = useState("")
 
-  const { user } = useAuth()
+  // ✅ Añadido authFetch al destructuring
+  const { user, authFetch } = useAuth()
 
   useEffect(() => {
     const sync = () => setCart(loadCart())
@@ -302,25 +303,31 @@ export default function CartPage() {
     setStripeLoading(true)
     setStripeError("")
 
+    console.log("📤 Enviando:", {
+  items: cart,
+  ...address
+})
+
     try {
-      const res = await fetch("http://localhost:8000/api/checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // Si usas Sanctum/JWT, aquí va el token.
-          // Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          user_id: user.id,
-          items: cart,
-          ...address,
-        }),
-      })
+    const token = localStorage.getItem("token")
+
+const res = await fetch("http://localhost:8000/api/checkout", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${token}`
+  },
+  body: JSON.stringify({
+    items: cart,
+    ...address
+  })
+})
+      
 
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data?.error || "No se pudo crear el checkout")
+        throw new Error(data?.error || data?.message || "No se pudo crear el checkout")
       }
 
       if (!data?.url) {

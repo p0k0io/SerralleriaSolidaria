@@ -21,6 +21,8 @@ import DashboardLayout from "./layouts/DashboardLayout"
 import Carrito from "./pages/admin/Carrito"
 import AttributeManager from "./components/AttributeManager"
 
+import Success from "./pages/Success";
+
 
 import { CartProvider } from "./components/shoppingCart/CartContext"
 
@@ -54,6 +56,8 @@ function App() {
             <Route path="packs" element={<Packs />} />
             <Route path="categories" element={<CategoryAdmin />} />
           </Route>
+
+          <Route path="/success" element={<Success />} />
 
         </Routes>
 
