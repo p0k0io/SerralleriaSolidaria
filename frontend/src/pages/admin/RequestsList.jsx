@@ -61,112 +61,103 @@ const STATUS = {
 };
 
 const STATUS_ORDER = [
-  "new",
-  "pending",
-  "contacted",
-  "quote_sent",
-  "approved",
-  "in_progress",
-  "done",
-  "rejected",
+  "new", "pending", "contacted", "quote_sent",
+  "approved", "in_progress", "done", "rejected",
 ];
 
 const STATUS_FLOW = {
-  new:         { next: "pending",    label: "Marcar pendiente",    color: "bg-amber-500 hover:bg-amber-600" },
-  pending:     { next: "contacted",  label: "Marcar contactado",   color: "bg-blue-500 hover:bg-blue-600" },
-  contacted:   { next: "quote_sent", label: "Enviar presupuesto",  color: "bg-violet-500 hover:bg-violet-600" },
-  quote_sent:  { next: "approved",   label: "Aprobar presupuesto", color: "bg-emerald-500 hover:bg-emerald-600" },
-  approved:    { next: "in_progress",label: "Iniciar trabajo",     color: "bg-orange-500 hover:bg-orange-600" },
-  in_progress: { next: "done",       label: "Finalizar",           color: "bg-teal-500 hover:bg-teal-600" },
+  new:         { next: "pending",     label: "Marcar pendiente",    color: "#f59e0b", hov: "#d97706" },
+  pending:     { next: "contacted",   label: "Marcar contactado",   color: "#3b82f6", hov: "#2563eb" },
+  contacted:   { next: "quote_sent",  label: "Enviar presupuesto",  color: "#8b5cf6", hov: "#7c3aed" },
+  quote_sent:  { next: "approved",    label: "Aprobar presupuesto", color: "#10b981", hov: "#059669" },
+  approved:    { next: "in_progress", label: "Iniciar trabajo",     color: "#f97316", hov: "#ea580c" },
+  in_progress: { next: "done",        label: "Finalizar",           color: "#059669", hov: "#047857" },
 };
 
 /* ================= HELPERS ================= */
 function formatDate(dateStr) {
   if (!dateStr) return "";
   return new Date(dateStr).toLocaleDateString("es-ES", {
-    day: "numeric",
-    month: "short",
+    day: "numeric", month: "short", year: "numeric",
   });
 }
 
-function InitialsAvatar({ name }) {
+function InitialsAvatar({ name, size = "sm" }) {
   const parts = (name || "?").trim().split(" ");
-  const initials =
-    parts.length >= 2 ? parts[0][0] + parts[1][0] : parts[0].slice(0, 2);
-  const colors = [
-    "bg-violet-100 text-violet-700",
-    "bg-blue-100 text-blue-700",
-    "bg-emerald-100 text-emerald-700",
-    "bg-amber-100 text-amber-700",
-    "bg-rose-100 text-rose-700",
+  const initials = parts.length >= 2 ? parts[0][0] + parts[1][0] : parts[0].slice(0, 2);
+  const palettes = [
+    { bg: "#ede9fe", text: "#6d28d9" },
+    { bg: "#dbeafe", text: "#1d4ed8" },
+    { bg: "#d1fae5", text: "#047857" },
+    { bg: "#fef3c7", text: "#b45309" },
+    { bg: "#ffe4e6", text: "#be123c" },
   ];
-  const idx = name ? name.charCodeAt(0) % colors.length : 0;
+  const p = palettes[(name || "").charCodeAt(0) % palettes.length];
+  const dim = size === "lg" ? 48 : 32;
+  const fs = size === "lg" ? 16 : 11;
   return (
-    <div
-      className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold uppercase flex-shrink-0 ${colors[idx]}`}
-    >
-      {initials.toUpperCase()}
+    <div style={{
+      width: dim, height: dim, borderRadius: "50%",
+      background: p.bg, color: p.text,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: fs, fontWeight: 600, flexShrink: 0, textTransform: "uppercase",
+      letterSpacing: "0.02em",
+    }}>
+      {initials}
     </div>
   );
 }
 
-/* ================= CARD ================= */
+/* ================= CARD (minimal) ================= */
 function RequestCard({ req, onDragStart, onOpen }) {
   const s = STATUS[req.status];
   return (
     <div
       draggable
-      onDragStart={() => onDragStart(req.id)}
+      onDragStart={(e) => { e.stopPropagation(); onDragStart(req.id); }}
       onClick={() => onOpen(req)}
-      className="group bg-white rounded-xl border border-slate-100 p-3.5 cursor-grab active:cursor-grabbing hover:border-slate-200 hover:shadow-[0_4px_20px_rgba(0,0,0,0.07)] transition-all duration-200"
+      style={{
+        background: "#fff",
+        border: "1px solid #f1f5f9",
+        borderRadius: 12,
+        padding: "10px 12px",
+        cursor: "grab",
+        transition: "box-shadow 0.15s, border-color 0.15s",
+        userSelect: "none",
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.borderColor = "#e2e8f0";
+        e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.06)";
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.borderColor = "#f1f5f9";
+        e.currentTarget.style.boxShadow = "none";
+      }}
     >
-      <div className="flex items-start gap-2.5">
-        <InitialsAvatar name={req.name} />
-        <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-semibold text-slate-800 truncate leading-tight">
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <InitialsAvatar name={req.name} size="sm" />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "#1e293b", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {req.name}
           </p>
-          <p className="text-[11px] text-slate-400 truncate mt-0.5">
+          <p style={{ fontSize: 11, color: "#94a3b8", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {req.email}
           </p>
+          {req.phone && (
+            <p style={{ fontSize: 11, color: "#cbd5e1", margin: "1px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {req.phone}
+            </p>
+          )}
         </div>
-      </div>
-
-      {req.description && (
-        <p className="text-[12px] text-slate-500 mt-2.5 line-clamp-2 leading-relaxed">
-          {req.description}
-        </p>
-      )}
-
-      {req.image && (
-        <img
-          src={`http://localhost:8000/storage/${req.image}`}
-          className="w-full h-20 object-cover rounded-lg mt-2.5 border border-slate-100"
-          alt="adjunto"
-        />
-      )}
-
-      {req.notes && (
-        <div className="mt-2.5 px-2.5 py-1.5 bg-amber-50 rounded-lg border border-amber-100">
-          <p className="text-[11px] text-amber-700 line-clamp-1">{req.notes}</p>
-        </div>
-      )}
-
-      <div className="mt-2.5 flex items-center justify-between">
-        <span
-          className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${s.badge}`}
-        >
-          <span
-            className="w-1.5 h-1.5 rounded-full inline-block"
-            style={{ background: s.dot }}
-          />
-          {s.label}
+        <span style={{
+          fontSize: 10, fontWeight: 500,
+          padding: "2px 7px", borderRadius: 99,
+          background: s.badge.includes("slate") ? "#f1f5f9" : undefined,
+          flexShrink: 0,
+          display: "flex", alignItems: "center", gap: 4,
+        }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: s.dot, display: "inline-block", flexShrink: 0 }} />
         </span>
-        {req.created_at && (
-          <span className="text-[10px] text-slate-300">
-            {formatDate(req.created_at)}
-          </span>
-        )}
       </div>
     </div>
   );
@@ -184,6 +175,13 @@ function RequestModal({ request, onClose, onStatusChange, onDelete }) {
       setConfirmAction(null);
     }
   }, [request?.id]);
+
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
 
   if (!request) return null;
 
@@ -213,169 +211,294 @@ function RequestModal({ request, onClose, onStatusChange, onDelete }) {
     }, 800);
   };
 
+  const currentIdx = STATUS_ORDER.indexOf(request.status);
+  const progressPct = Math.round((currentIdx / (STATUS_ORDER.length - 1)) * 100);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 50,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      padding: 24,
+    }}>
+      {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
         onClick={onClose}
+        style={{ position: "absolute", inset: 0, background: "rgba(15,23,42,0.55)", backdropFilter: "blur(4px)" }}
       />
 
-      <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl flex overflow-hidden border border-slate-100">
+      {/* Modal */}
+      <div style={{
+        position: "relative", width: "100%", maxWidth: 780,
+        background: "#fff", borderRadius: 20,
+        boxShadow: "0 25px 60px rgba(0,0,0,0.18)",
+        display: "flex", flexDirection: "column",
+        overflow: "hidden", maxHeight: "90vh",
+        border: "1px solid #f1f5f9",
+      }}>
 
-        {/* LEFT */}
-        <div className="flex-1 p-7 overflow-y-auto">
-          <div className="flex items-start gap-3 mb-6">
-            <InitialsAvatar name={request.name} />
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 leading-tight">
-                {request.name}
-              </h2>
-              <p className="text-sm text-slate-400 mt-0.5">{request.email}</p>
+        {/* ── TOP HEADER BAR ── */}
+        <div style={{ padding: "24px 28px 0", borderBottom: "1px solid #f8fafc" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 20 }}>
+            <InitialsAvatar name={request.name} size="lg" />
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", margin: 0, lineHeight: 1.2 }}>
+                  {request.name}
+                </h2>
+                <span style={{
+                  display: "inline-flex", alignItems: "center", gap: 5,
+                  fontSize: 11, fontWeight: 600,
+                  padding: "3px 10px", borderRadius: 99,
+                  background: s.badge.split(" ")[0].replace("bg-", "").includes("slate") ? "#f1f5f9"
+                    : s.badge.split(" ")[0].replace("bg-", "").includes("amber") ? "#fffbeb"
+                    : s.badge.split(" ")[0].replace("bg-", "").includes("blue") ? "#eff6ff"
+                    : s.badge.split(" ")[0].replace("bg-", "").includes("violet") ? "#f5f3ff"
+                    : s.badge.split(" ")[0].replace("bg-", "").includes("emerald") ? "#ecfdf5"
+                    : s.badge.split(" ")[0].replace("bg-", "").includes("orange") ? "#fff7ed"
+                    : s.badge.split(" ")[0].replace("bg-", "").includes("teal") ? "#f0fdfa"
+                    : "#fef2f2",
+                  color: s.dot,
+                }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: s.dot, flexShrink: 0 }} />
+                  {s.label}
+                </span>
+              </div>
+
+              <div style={{ display: "flex", gap: 20, marginTop: 6, flexWrap: "wrap" }}>
+                {request.email && (
+                  <span style={{ fontSize: 13, color: "#64748b", display: "flex", alignItems: "center", gap: 5 }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                    {request.email}
+                  </span>
+                )}
+                {request.phone && (
+                  <span style={{ fontSize: 13, color: "#64748b", display: "flex", alignItems: "center", gap: 5 }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.15 12 19.79 19.79 0 0 1 1.08 3.4a2 2 0 0 1 1.49-2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L6.91 8.71a16 16 0 0 0 6.29 6.29l.86-.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    {request.phone}
+                  </span>
+                )}
+                {request.created_at && (
+                  <span style={{ fontSize: 13, color: "#94a3b8", display: "flex", alignItems: "center", gap: 5 }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    {formatDate(request.created_at)}
+                  </span>
+                )}
+              </div>
             </div>
-            <span
-              className={`ml-auto inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full ${s.badge}`}
+
+            {/* Close */}
+            <button
+              onClick={onClose}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                color: "#cbd5e1", padding: 4, borderRadius: 8,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                transition: "color 0.15s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = "#475569"}
+              onMouseLeave={e => e.currentTarget.style.color = "#cbd5e1"}
             >
-              <span
-                className="w-1.5 h-1.5 rounded-full inline-block"
-                style={{ background: s.dot }}
-              />
-              {s.label}
-            </span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6 6 18M6 6l12 12"/>
+              </svg>
+            </button>
           </div>
 
-          <div className="mb-5">
-            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">
-              Descripción
-            </label>
-            <p className="mt-2 text-sm text-slate-700 whitespace-pre-line leading-relaxed">
-              {request.description || (
-                <span className="text-slate-300 italic">Sin descripción</span>
-              )}
-            </p>
-          </div>
-
-          {request.image && (
-            <div className="mb-5">
-              <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">
-                Adjunto
-              </label>
-              <img
-                src={`http://localhost:8000/storage/${request.image}`}
-                className="mt-2 w-full rounded-xl border border-slate-100"
-                alt="adjunto"
-              />
+          {/* Progress bar */}
+          <div style={{ marginBottom: 0, paddingBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+              <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Progreso</span>
+              <span style={{ fontSize: 10, color: "#94a3b8" }}>{progressPct}%</span>
             </div>
-          )}
-
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">
-                Nota interna
-              </label>
-              <span className="text-[10px] text-slate-300">
-                Se guarda automáticamente
-              </span>
+            <div style={{ height: 4, background: "#f1f5f9", borderRadius: 99, overflow: "hidden" }}>
+              <div style={{
+                height: "100%", borderRadius: 99,
+                background: `linear-gradient(90deg, ${s.dot}, ${s.dot}cc)`,
+                width: `${progressPct}%`,
+                transition: "width 0.4s ease",
+              }} />
             </div>
-            <textarea
-              value={note}
-              onChange={(e) => handleNoteChange(e.target.value)}
-              placeholder="Añade una nota interna..."
-              className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-violet-300 transition resize-none"
-              rows={3}
-            />
+            {/* Step labels */}
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+              {STATUS_ORDER.map((st, i) => (
+                <div key={st} style={{
+                  fontSize: 9, color: i <= currentIdx ? s.dot : "#cbd5e1",
+                  fontWeight: i === currentIdx ? 700 : 400,
+                  textAlign: "center", flex: 1,
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                }}>
+                  {STATUS[st].label}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* RIGHT SIDEBAR */}
-        <div className="w-64 border-l border-slate-100 bg-slate-50/60 p-5 flex flex-col gap-3">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-            Acciones
-          </p>
+        {/* ── BODY ── */}
+        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
 
-          {isFinished ? (
-            <>
-              {!confirmAction && (
-                <button
-                  onClick={() => setConfirmAction("delete")}
-                  className="w-full py-2.5 rounded-xl text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition"
-                >
-                  Eliminar solicitud
-                </button>
-              )}
-              {confirmAction === "delete" && (
-                <div className="flex flex-col gap-2">
-                  <p className="text-xs text-slate-500 bg-white p-3 rounded-xl border border-slate-100">
+          {/* LEFT: content */}
+          <div style={{ flex: 1, padding: "24px 28px", overflowY: "auto", display: "flex", flexDirection: "column", gap: 24 }}>
+
+            {/* Description */}
+            <div>
+              <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 10px" }}>
+                Descripción
+              </p>
+              <p style={{ fontSize: 14, color: "#374151", lineHeight: 1.7, margin: 0, whiteSpace: "pre-line" }}>
+                {request.description || <span style={{ color: "#cbd5e1", fontStyle: "italic" }}>Sin descripción</span>}
+              </p>
+            </div>
+
+            {/* Image */}
+            {request.image && (
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 10px" }}>
+                  Adjunto
+                </p>
+                <img
+                  src={`http://localhost:8000/storage/${request.image}`}
+                  style={{ width: "100%", borderRadius: 12, border: "1px solid #f1f5f9", display: "block" }}
+                  alt="adjunto"
+                />
+              </div>
+            )}
+
+            {/* Note */}
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", margin: 0 }}>
+                  Nota interna
+                </p>
+                <span style={{ fontSize: 10, color: "#cbd5e1" }}>Se guarda automáticamente</span>
+              </div>
+              <textarea
+                value={note}
+                onChange={(e) => handleNoteChange(e.target.value)}
+                placeholder="Añade una nota interna..."
+                rows={4}
+                style={{
+                  width: "100%", padding: "12px 14px", boxSizing: "border-box",
+                  border: "1px solid #e2e8f0", borderRadius: 12,
+                  background: "#f8fafc", fontSize: 13, color: "#374151",
+                  resize: "none", outline: "none", lineHeight: 1.6,
+                  fontFamily: "inherit", transition: "border-color 0.15s",
+                }}
+                onFocus={e => e.target.style.borderColor = "#a78bfa"}
+                onBlur={e => e.target.style.borderColor = "#e2e8f0"}
+              />
+            </div>
+          </div>
+
+          {/* RIGHT: actions */}
+          <div style={{
+            width: 220, borderLeft: "1px solid #f8fafc",
+            background: "#fafafa", padding: "24px 20px",
+            display: "flex", flexDirection: "column", gap: 10,
+            flexShrink: 0,
+          }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 4px" }}>
+              Acciones
+            </p>
+
+            {isFinished ? (
+              confirmAction === "delete" ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <p style={{ fontSize: 12, color: "#64748b", background: "#fff", padding: "10px 12px", borderRadius: 10, border: "1px solid #f1f5f9", margin: 0, lineHeight: 1.5 }}>
                     ¿Eliminar esta solicitud definitivamente?
                   </p>
-                  <button
-                    onClick={executeDelete}
-                    className="w-full py-2.5 rounded-xl text-sm font-medium bg-slate-900 text-white hover:bg-slate-700 transition"
-                  >
-                    Sí, eliminar
-                  </button>
-                  <button
-                    onClick={() => setConfirmAction(null)}
-                    className="text-xs text-slate-400 hover:text-slate-600 transition"
-                  >
-                    Cancelar
-                  </button>
+                  <ActionBtn label="Sí, eliminar" bg="#0f172a" hov="#1e293b" onClick={executeDelete} />
+                  <button onClick={() => setConfirmAction(null)} style={cancelBtnStyle}>Cancelar</button>
                 </div>
-              )}
-            </>
-          ) : (
-            <>
-              {flow && (
-                <button
-                  onClick={() => executeAction(flow.next)}
-                  className={`w-full py-2.5 rounded-xl text-sm font-medium text-white transition ${flow.color}`}
-                >
-                  {flow.label}
-                </button>
-              )}
+              ) : (
+                <ActionBtn label="Eliminar solicitud" bg="#ef4444" hov="#dc2626" onClick={() => setConfirmAction("delete")} />
+              )
+            ) : (
+              <>
+                {flow && (
+                  <ActionBtn
+                    label={flow.label}
+                    bg={flow.color}
+                    hov={flow.hov}
+                    onClick={() => executeAction(flow.next)}
+                  />
+                )}
 
-              {isQuoteSent && (
-                <>
-                  {confirmAction === "reject" ? (
-                    <div className="flex flex-col gap-2">
-                      <p className="text-xs text-slate-500 bg-white p-3 rounded-xl border border-slate-100">
-                        ¿Marcar el presupuesto como rechazado?
+                {isQuoteSent && (
+                  confirmAction === "reject" ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <p style={{ fontSize: 12, color: "#64748b", background: "#fff", padding: "10px 12px", borderRadius: 10, border: "1px solid #f1f5f9", margin: 0, lineHeight: 1.5 }}>
+                        ¿Rechazar este presupuesto?
                       </p>
-                      <button
-                        onClick={() => executeAction("rejected")}
-                        className="w-full py-2 rounded-xl text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition"
-                      >
-                        Sí, rechazar
-                      </button>
-                      <button
-                        onClick={() => setConfirmAction(null)}
-                        className="text-xs text-slate-400 hover:text-slate-600 transition"
-                      >
-                        Cancelar
-                      </button>
+                      <ActionBtn label="Sí, rechazar" bg="#ef4444" hov="#dc2626" onClick={() => executeAction("rejected")} />
+                      <button onClick={() => setConfirmAction(null)} style={cancelBtnStyle}>Cancelar</button>
                     </div>
                   ) : (
                     <button
                       onClick={() => setConfirmAction("reject")}
-                      className="w-full py-2.5 rounded-xl text-sm font-medium border border-red-200 text-red-500 hover:bg-red-50 transition"
+                      style={{
+                        width: "100%", padding: "10px 0", borderRadius: 10,
+                        fontSize: 13, fontWeight: 500, cursor: "pointer",
+                        background: "none", border: "1px solid #fecaca",
+                        color: "#ef4444", transition: "background 0.15s",
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#fef2f2"}
+                      onMouseLeave={e => e.currentTarget.style.background = "none"}
                     >
                       Rechazar presupuesto
                     </button>
-                  )}
-                </>
-              )}
-            </>
-          )}
+                  )
+                )}
+              </>
+            )}
 
-          <div className="mt-auto pt-4 border-t border-slate-100">
-            <button
-              onClick={onClose}
-              className="text-xs text-slate-400 hover:text-slate-600 transition"
-            >
-              ← Cerrar
-            </button>
+            {/* Divider + meta info */}
+            <div style={{ marginTop: "auto", paddingTop: 16, borderTop: "1px solid #f1f5f9" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <MetaRow icon="id" label="ID" value={`#${request.id}`} />
+                {request.created_at && <MetaRow icon="cal" label="Creado" value={formatDate(request.created_at)} />}
+              </div>
+            </div>
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* tiny helpers */
+const cancelBtnStyle = {
+  background: "none", border: "none", cursor: "pointer",
+  fontSize: 12, color: "#94a3b8", padding: "4px 0", textAlign: "center",
+  transition: "color 0.15s",
+};
+
+function ActionBtn({ label, bg, hov, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        width: "100%", padding: "10px 0", borderRadius: 10,
+        fontSize: 13, fontWeight: 600, cursor: "pointer",
+        background: hover ? hov : bg,
+        color: "#fff", border: "none",
+        transition: "background 0.15s",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function MetaRow({ label, value }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <span style={{ fontSize: 11, color: "#94a3b8" }}>{label}</span>
+      <span style={{ fontSize: 11, color: "#475569", fontWeight: 500 }}>{value}</span>
     </div>
   );
 }
@@ -386,50 +509,57 @@ function Column({ status, items, onDrop, onDragStart, onOpen }) {
   const [dragOver, setDragOver] = useState(false);
 
   return (
-    <div className="min-w-[232px] flex flex-col gap-2">
-      <div
-        className={`flex items-center justify-between px-3 py-2 rounded-xl border ${s.header} bg-white`}
-      >
-        <div className="flex items-center gap-2">
-          <span
-            className="w-2 h-2 rounded-full flex-shrink-0"
-            style={{ background: s.dot }}
-          />
-          <span className="text-[12px] font-semibold text-slate-700">
-            {s.label}
-          </span>
+    <div style={{ minWidth: 228, display: "flex", flexDirection: "column", gap: 8 }}>
+      {/* Header */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "8px 12px", borderRadius: 10, background: "#fff",
+        border: `1px solid`,
+        borderColor: s.header.replace("border-", "").includes("slate") ? "#e2e8f0"
+          : s.header.replace("border-", "").includes("amber") ? "#fde68a"
+          : s.header.replace("border-", "").includes("blue") ? "#bfdbfe"
+          : s.header.replace("border-", "").includes("violet") ? "#ddd6fe"
+          : s.header.replace("border-", "").includes("emerald") ? "#a7f3d0"
+          : s.header.replace("border-", "").includes("orange") ? "#fed7aa"
+          : s.header.replace("border-", "").includes("teal") ? "#99f6e4"
+          : "#fecaca",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: s.dot, flexShrink: 0 }} />
+          <span style={{ fontSize: 12, fontWeight: 600, color: "#334155" }}>{s.label}</span>
         </div>
-        <span className="text-[11px] font-semibold text-slate-400 bg-slate-100 rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+        <span style={{
+          fontSize: 11, fontWeight: 600, color: "#94a3b8",
+          background: "#f1f5f9", borderRadius: 99,
+          padding: "1px 7px", minWidth: 20, textAlign: "center",
+        }}>
           {items.length}
         </span>
       </div>
 
+      {/* Drop zone */}
       <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragOver(true);
-        }}
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
-        onDrop={() => {
-          setDragOver(false);
-          onDrop(status);
+        onDrop={() => { setDragOver(false); onDrop(status); }}
+        style={{
+          display: "flex", flexDirection: "column", gap: 8,
+          padding: 8, borderRadius: 12, minHeight: 120,
+          border: `2px dashed`,
+          borderColor: dragOver
+            ? s.dot
+            : "#e2e8f0",
+          background: dragOver ? `${s.dot}10` : "#f8fafc",
+          transition: "all 0.15s",
         }}
-        className={`flex flex-col gap-2 p-2 rounded-xl min-h-[120px] border-2 border-dashed transition-all duration-150 ${
-          dragOver ? s.dragOver : "border-slate-100 bg-slate-50/50"
-        }`}
       >
         {items.length === 0 && (
-          <div className="flex-1 flex items-center justify-center py-6">
-            <p className="text-[11px] text-slate-300">Sin solicitudes</p>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px 0" }}>
+            <p style={{ fontSize: 11, color: "#cbd5e1", margin: 0 }}>Sin solicitudes</p>
           </div>
         )}
         {items.map((req) => (
-          <RequestCard
-            key={req.id}
-            req={req}
-            onDragStart={onDragStart}
-            onOpen={onOpen}
-          />
+          <RequestCard key={req.id} req={req} onDragStart={onDragStart} onOpen={onOpen} />
         ))}
       </div>
     </div>
@@ -440,12 +570,10 @@ function Column({ status, items, onDrop, onDragStart, onOpen }) {
 export default function RequestsBoard() {
   const [requests, setRequests] = useState([]);
   const [draggedId, setDraggedId] = useState(null);
-  const [selected, setSelected] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    loadRequests();
-  }, []);
+  useEffect(() => { loadRequests(); }, []);
 
   const loadRequests = async () => {
     const res = await fetch("http://localhost:8000/api/requests");
@@ -478,11 +606,10 @@ export default function RequestsBoard() {
   };
 
   const filtered = search
-    ? requests.filter(
-        (r) =>
-          r.name?.toLowerCase().includes(search.toLowerCase()) ||
-          r.email?.toLowerCase().includes(search.toLowerCase()) ||
-          r.description?.toLowerCase().includes(search.toLowerCase())
+    ? requests.filter((r) =>
+        r.name?.toLowerCase().includes(search.toLowerCase()) ||
+        r.email?.toLowerCase().includes(search.toLowerCase()) ||
+        r.description?.toLowerCase().includes(search.toLowerCase())
       )
     : requests;
 
@@ -491,59 +618,69 @@ export default function RequestsBoard() {
     return acc;
   }, {});
 
+  // Derive selected request live from state (avoids stale reference after status update)
+  const selectedRequest = selectedId != null ? requests.find((r) => r.id === selectedId) ?? null : null;
+
   const total = requests.length;
   const done = requests.filter((r) => r.status === "done").length;
-  const inProgress = requests.filter(
-    (r) => !["done", "rejected", "new"].includes(r.status)
-  ).length;
+  const inProgress = requests.filter((r) => !["done", "rejected", "new"].includes(r.status)).length;
   const rejected = requests.filter((r) => r.status === "rejected").length;
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
-      <div className="bg-white border-b border-slate-100 px-6 py-4">
-        <div className="flex items-center justify-between mb-4">
+    <div style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: "system-ui, -apple-system, sans-serif" }}>
+      {/* Top bar */}
+      <div style={{ background: "#fff", borderBottom: "1px solid #f1f5f9", padding: "16px 24px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+            <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", margin: 0, letterSpacing: "-0.02em" }}>
               Gestión de solicitudes
             </h1>
-            <p className="text-sm text-slate-400 mt-0.5">
+            <p style={{ fontSize: 13, color: "#94a3b8", margin: "3px 0 0" }}>
               Panel de control — vista Kanban
             </p>
           </div>
-          <div className="relative">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="M21 21l-4.35-4.35" />
+          <div style={{ position: "relative" }}>
+            <svg style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#cbd5e1" }}
+              width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
             </svg>
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar solicitud..."
-              className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-violet-300 transition w-56 placeholder-slate-300"
+              style={{
+                paddingLeft: 32, paddingRight: 14, paddingTop: 8, paddingBottom: 8,
+                fontSize: 13, border: "1px solid #e2e8f0", borderRadius: 10,
+                background: "#f8fafc", outline: "none", width: 220,
+                color: "#374151", fontFamily: "inherit",
+              }}
             />
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
-          <Stat label="Total" value={total} color="text-slate-700" />
-          <div className="w-px h-5 bg-slate-100" />
-          <Stat label="En proceso" value={inProgress} color="text-violet-600" />
-          <div className="w-px h-5 bg-slate-100" />
-          <Stat label="Finalizados" value={done} color="text-emerald-600" />
-          <div className="w-px h-5 bg-slate-100" />
-          <Stat label="Rechazados" value={rejected} color="text-red-500" />
+        {/* Stats */}
+        <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+          {[
+            { label: "Total", value: total, color: "#334155" },
+            { label: "En proceso", value: inProgress, color: "#8b5cf6" },
+            { label: "Finalizados", value: done, color: "#059669" },
+            { label: "Rechazados", value: rejected, color: "#ef4444" },
+          ].map((s, i) => (
+            <div key={s.label} style={{ display: "flex", alignItems: "center", gap: i > 0 ? 0 : 0 }}>
+              {i > 0 && <div style={{ width: 1, height: 20, background: "#f1f5f9", marginRight: 24 }} />}
+              <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                <span style={{ fontSize: 18, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.value}</span>
+                <span style={{ fontSize: 12, color: "#94a3b8" }}>{s.label}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="px-6 py-6 overflow-x-auto">
-        <div className="flex gap-3 min-w-max">
+      {/* Board */}
+      <div style={{ padding: "24px", overflowX: "auto" }}>
+        <div style={{ display: "flex", gap: 12, minWidth: "max-content" }}>
           {STATUS_ORDER.map((status) => (
             <Column
               key={status}
@@ -551,27 +688,18 @@ export default function RequestsBoard() {
               items={grouped[status]}
               onDrop={handleDrop}
               onDragStart={handleDragStart}
-              onOpen={setSelected}
+              onOpen={(req) => setSelectedId(req.id)}
             />
           ))}
         </div>
       </div>
 
       <RequestModal
-        request={selected}
-        onClose={() => setSelected(null)}
+        request={selectedRequest}
+        onClose={() => setSelectedId(null)}
         onStatusChange={updateStatus}
         onDelete={deleteRequest}
       />
-    </div>
-  );
-}
-
-function Stat({ label, value, color }) {
-  return (
-    <div className="flex items-baseline gap-1.5">
-      <span className={`text-lg font-bold leading-none ${color}`}>{value}</span>
-      <span className="text-xs text-slate-400">{label}</span>
     </div>
   );
 }
