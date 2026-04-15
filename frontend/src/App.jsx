@@ -23,6 +23,7 @@ import Carrito from "./pages/admin/Carrito"
 import AttributeManager from "./components/AttributeManager"
 
 import RequestsList from "./pages/admin/RequestsList";
+import Orders from "./pages/admin/OrdersBoards"
 import Success from "./pages/Success"
 import { CartProvider } from "./components/shoppingCart/CartContext"
 
@@ -40,6 +41,7 @@ function App() {
             <Route path="carrito" element={<Carrito />} />
             <Route path="atr" element={<AttributeManager />} />
             <Route path="solicitud" element={<CustomRequestPage />} />
+
           </Route>
 
           {/* AUTH */}
@@ -54,6 +56,7 @@ function App() {
             <Route path="categories" element={<CategoryAdmin />} />
             <Route path="cart" element={<Carrito />} />
             <Route path="requests" element={<RequestsList />} />
+            <Route path="orders" element={<Orders />} />
           </Route>
           <Route path="/success" element={<Success />} />
 
