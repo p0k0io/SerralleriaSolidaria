@@ -10,10 +10,11 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\PackController;
 use App\Http\Controllers\Api\AttributeTypeController;
 use App\Http\Controllers\Api\AttributeValueController;
+use App\Http\Controllers\Api\RequestController;
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\RequestController;
+
 
 
 use App\Http\Controllers\DashboardController;
@@ -44,6 +45,15 @@ Route::get('/products/{id}',[ProductController::class, 'show']);
 Route::post('/products',[ProductController::class, 'store']);
 Route::post('/products/products-with-variants',[ProductController::class, 'storeWithVariants']);
 
+
+Route::get('/requests/{id}', [RequestController::class, 'show']);
+Route::delete('/requests/{id}', [RequestController::class, 'destroy']);
+Route::get('/requests/status/{status}', [RequestController::class, 'filterByStatus']);
+Route::get('/requests/date-range', [RequestController::class, 'filterByDateRange']);
+Route::get('/requests/search', [RequestController::class, 'searchByCustomerName']);
+Route::get('/requests/summary', [RequestController::class, 'summaryByStatus']);
+Route::get('/requests/{id}/pdf', [RequestController::class, 'generatePdf']);
+Route::get('/requests/{id}/email', [RequestController::class, 'sendEmailNotification']);
 // Actualización
 Route::put('/products/{id}',[ProductController::class, 'update']);
 

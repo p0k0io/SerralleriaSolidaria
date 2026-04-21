@@ -1,24 +1,31 @@
 <?php
-namespace App\Http\Controllers;
 
-use App\Models\Request as RequestModel;
+namespace App\Http\Controllers\Api;
+
+use App\Models\RequestModel;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 
 class RequestController extends Controller
 {
-    // LISTAR TODAS LAS SOLICITUDES
+    // =========================
+    // LISTAR
+    // =========================
     public function index()
     {
         return RequestModel::orderBy('created_at', 'desc')->get();
     }
 
-    // CREAR SOLICITUD (CON IMAGEN)
+    // =========================
+    // CREAR SOLICITUD
+    // =========================
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name' => 'required',
-            'email' => 'required',
-            'description' => 'required',
+            'name' => 'required|string',
+            'email' => 'required|email',
+            'phone' => 'required|string', // 👈 NUEVO (OBLIGATORIO)
+            'description' => 'required|string',
             'image' => 'nullable|image|max:2048',
         ]);
 
@@ -34,29 +41,50 @@ class RequestController extends Controller
         return response()->json($requestCreated);
     }
 
-    // CAMBIAR ESTADO (DRAG & DROP)
+    // =========================
+    // UPDATE STATUS + NOTES (JUNTOS)
+    // =========================
     public function updateStatus(Request $request, $id)
     {
         $req = RequestModel::findOrFail($id);
 
         $request->validate([
-            'status' => 'required|in:new,contacted,quote_sent,approved,in_progress,done,rejected'
+            'status' => 'required|in:new,contacted,quote_sent,approved,in_progress,done,rejected',
+            'notes' => 'nullable|string'
         ]);
 
         $req->status = $request->status;
+
+        // 👇 NOTA ADMIN (SE GUARDA AQUÍ MISMO)
+        if ($request->has('notes')) {
+            $req->notes = $request->notes;
+        }
+
         $req->save();
 
-        return response()->json(['message' => 'status updated']);
+        return response()->json([
+            'message' => 'Request updated successfully',
+            'data' => $req
+        ]);
     }
 
-    // NOTAS INTERNAS
-    public function updateNotes(Request $request, $id)
+    // =========================
+    // DELETE (SOLO DONE O REJECTED)
+    // =========================
+    public function destroy($id)
     {
         $req = RequestModel::findOrFail($id);
 
-        $req->notes = $request->notes;
-        $req->save();
+        if (!in_array($req->status, ['done', 'rejected'])) {
+            return response()->json([
+                'message' => 'Solo se pueden eliminar solicitudes finalizadas o rechazadas'
+            ], 403);
+        }
 
-        return response()->json(['message' => 'notes updated']);
+        $req->delete();
+
+        return response()->json([
+            'message' => 'Request deleted successfully'
+        ]);
     }
 }

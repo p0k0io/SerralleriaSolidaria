@@ -2,9 +2,15 @@ import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 
 export default function CustomRequestForm() {
-  const [form, setForm] = useState({ name: "", email: "", description: "" });
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "", // 👈 NEW
+    description: ""
+  });
+
   const [file, setFile] = useState(null);
-  const [message, setMessage] = useState(null); // { text, type: 'ok' | 'err' }
+  const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -22,12 +28,15 @@ export default function CustomRequestForm() {
       setMessage({ text: "Rellena todos los campos obligatorios.", type: "err" });
       return;
     }
+
     setLoading(true);
     setMessage(null);
+
     try {
       const fd = new FormData();
       fd.append("name", form.name);
       fd.append("email", form.email);
+      fd.append("phone", form.phone); // 👈 NEW
       fd.append("description", form.description);
       if (file) fd.append("image", file);
 
@@ -35,13 +44,22 @@ export default function CustomRequestForm() {
         method: "POST",
         body: fd,
       });
+
       if (!res.ok) throw new Error();
 
-      setMessage({ text: "Solicitud enviada correctamente. Te contactaremos pronto.", type: "ok" });
-      setForm({ name: "", email: "", description: "" });
+      setMessage({
+        text: "Solicitud enviada correctamente. Te contactaremos pronto.",
+        type: "ok"
+      });
+
+      setForm({ name: "", email: "", phone: "", description: "" }); // 👈 NEW
       removeFile();
+
     } catch {
-      setMessage({ text: "No se pudo enviar la solicitud. Inténtalo de nuevo.", type: "err" });
+      setMessage({
+        text: "No se pudo enviar la solicitud. Inténtalo de nuevo.",
+        type: "err"
+      });
     } finally {
       setLoading(false);
     }
@@ -63,7 +81,9 @@ export default function CustomRequestForm() {
 
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-slate-800">Solicitud personalizada</h1>
+        <h1 className="text-2xl font-extrabold text-slate-800">
+          Solicitud personalizada
+        </h1>
         <p className="text-sm text-slate-400 mt-1">
           Cuéntanos qué necesitas y te responderemos lo antes posible con una propuesta.
         </p>
@@ -72,10 +92,13 @@ export default function CustomRequestForm() {
       {/* Card */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
 
-        {/* Name + Email */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        {/* Name + Email + PHONE (SOLO AÑADIDO, RESTO IGUAL) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Nombre</label>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+              Nombre
+            </label>
             <input
               type="text"
               placeholder="Tu nombre completo"
@@ -84,8 +107,11 @@ export default function CustomRequestForm() {
               className="w-full text-sm px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
             />
           </div>
+
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Correo electrónico</label>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+              Correo electrónico
+            </label>
             <input
               type="email"
               placeholder="correo@ejemplo.com"
@@ -94,11 +120,28 @@ export default function CustomRequestForm() {
               className="w-full text-sm px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
             />
           </div>
+
+          {/* 👇 SOLO AÑADIDO */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+              Teléfono
+            </label>
+            <input
+              type="tel"
+              placeholder="+34 600 000 000"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              className="w-full text-sm px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
+            />
+          </div>
+
         </div>
 
-        {/* Description */}
+        {/* Description (IGUAL) */}
         <div className="mb-4">
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">¿Qué necesitas?</label>
+          <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+            ¿Qué necesitas?
+          </label>
           <textarea
             rows={4}
             placeholder="Describe el producto, la cantidad, las medidas u otros detalles relevantes…"
@@ -108,7 +151,7 @@ export default function CustomRequestForm() {
           />
         </div>
 
-        {/* File upload */}
+        {/* FILE UPLOAD 👉 COMPLETAMENTE IGUAL QUE EL TUYO ORIGINAL */}
         <div className="mb-4">
           <label className="block text-xs font-semibold text-slate-500 mb-1.5">
             Imagen de referencia{" "}
@@ -122,11 +165,18 @@ export default function CustomRequestForm() {
                 <polyline points="17 8 12 3 7 8" />
                 <line x1="12" y1="3" x2="12" y2="15" />
               </svg>
+
               <span className="text-sm text-slate-500">
                 Arrastra una imagen aquí o{" "}
-                <span className="text-orange-500 font-semibold">selecciona un archivo</span>
+                <span className="text-orange-500 font-semibold">
+                  selecciona un archivo
+                </span>
               </span>
-              <span className="text-xs text-slate-400">PNG, JPG, WEBP — máx. 10 MB</span>
+
+              <span className="text-xs text-slate-400">
+                PNG, JPG, WEBP — máx. 10 MB
+              </span>
+
               <input
                 ref={fileInputRef}
                 type="file"
@@ -144,7 +194,11 @@ export default function CustomRequestForm() {
                   <polyline points="21 15 16 10 5 21" />
                 </svg>
               </div>
-              <span className="text-sm text-slate-700 flex-1 truncate">{file.name}</span>
+
+              <span className="text-sm text-slate-700 flex-1 truncate">
+                {file.name}
+              </span>
+
               <button
                 onClick={removeFile}
                 className="text-slate-400 hover:text-slate-700 transition p-0.5"
@@ -158,10 +212,9 @@ export default function CustomRequestForm() {
           )}
         </div>
 
-        {/* Divider */}
+        {/* Submit (IGUAL) */}
         <div className="border-t border-slate-100 my-5" />
 
-        {/* Submit */}
         <button
           onClick={handleSubmit}
           disabled={loading}
@@ -174,7 +227,7 @@ export default function CustomRequestForm() {
           Revisamos todas las solicitudes en menos de 24 horas laborables.
         </p>
 
-        {/* Message */}
+        {/* Message (IGUAL) */}
         {message && (
           <div
             className={`flex items-center gap-2 mt-4 px-4 py-3 rounded-xl text-sm ${
