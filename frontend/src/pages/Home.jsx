@@ -4,21 +4,37 @@ import ProductDetail from "./ProductDetail.jsx"
 
 export const CART_KEY = "tienda_cart"
 
-async function getActiveProducts() {
+const API = "http://localhost:8000/api"
+
+const STOCK_CONFIG = {
+  available:    { label: "Disponible",   color: "text-emerald-600 bg-emerald-50 border-emerald-200", dot: "bg-emerald-400" },
+  out_of_stock: { label: "Sin stock",    color: "text-red-500 bg-red-50 border-red-200",             dot: "bg-red-400" },
+  next_batch:   { label: "Lote próximo", color: "text-amber-600 bg-amber-50 border-amber-200",       dot: "bg-amber-400" },
+}
+
+/* ─── API ──────────────────────────────────────────────────────── */
+
+async function getActiveProducts(params = {}) {
   try {
-    const res = await fetch("http://localhost:8000/api/variants/active", {
+    const qs = new URLSearchParams()
+    if (params.search)       qs.set("search", params.search)
+    if (params.stock_status) qs.set("stock_status", params.stock_status)
+    if (params.featured !== undefined) qs.set("featured", params.featured ? "1" : "0")
+
+    const res = await fetch(`${API}/variants/active?${qs.toString()}`, {
       headers: { "Content-Type": "application/json" },
     })
     if (!res.ok) throw new Error("Error al obtener productos")
     const data = await res.json()
     if (Array.isArray(data)) {
       return data.reduce((acc, v) => {
-        if (!acc[v.product_name]) acc[v.product_name] = []
-        acc[v.product_name].push(v)
+        const key = v.product?.name ?? v.product_name ?? "Sin nombre"
+        if (!acc[key]) acc[key] = []
+        acc[key].push(v)
         return acc
       }, {})
     }
-    return data
+    return {}
   } catch (e) {
     console.error(e.message)
     return {}
@@ -27,27 +43,22 @@ async function getActiveProducts() {
 
 async function getFeaturedProducts() {
   try {
-    const res = await fetch("http://localhost:8000/api/variants/active", {
+    const res = await fetch(`${API}/variants/active?featured=1`, {
       headers: { "Content-Type": "application/json" },
     })
     if (!res.ok) throw new Error("Error al obtener productos destacados")
     const data = await res.json()
-    if (Array.isArray(data)) {
-      return data.filter(v => v.featured && v.active)
-    }
-    return []
+    return Array.isArray(data) ? data.filter((v) => v.featured && v.active) : []
   } catch (e) {
     console.error(e.message)
     return []
   }
 }
 
+/* ─── CART ─────────────────────────────────────────────────────── */
+
 function loadCart() {
-  try {
-    return JSON.parse(localStorage.getItem(CART_KEY) || "[]")
-  } catch {
-    return []
-  }
+  try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]") } catch { return [] }
 }
 
 function persistCart(cart) {
@@ -55,44 +66,80 @@ function persistCart(cart) {
   window.dispatchEvent(new Event("cart-updated"))
 }
 
-/* ---------------- ICONOS ---------------- */
+/* ─── ICONS ────────────────────────────────────────────────────── */
 
 function ProductIcon({ name = "", size = 36 }) {
   const n = name.toLowerCase()
-  const p = {
-    xmlns: "http://www.w3.org/2000/svg", width: size, height: size,
-    viewBox: "0 0 24 24", fill: "none", stroke: "currentColor",
-    strokeWidth: "1.4", strokeLinecap: "round", strokeLinejoin: "round"
-  }
-  if (n.includes("bomb"))
-    return <svg {...p}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-  if (n.includes("escudo"))
-    return <svg {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-  if (n.includes("cerradura"))
-    return <svg {...p}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/><circle cx="12" cy="16" r="1.5" fill="currentColor"/></svg>
+  const p = { xmlns: "http://www.w3.org/2000/svg", width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.4", strokeLinecap: "round", strokeLinejoin: "round" }
+  if (n.includes("bomb"))      return <svg {...p}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+  if (n.includes("escudo"))    return <svg {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+  if (n.includes("cerradura")) return <svg {...p}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/><circle cx="12" cy="16" r="1.5" fill="currentColor"/></svg>
   return <svg {...p}><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
 }
 
 function EyeIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
-      fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-      <circle cx="12" cy="12" r="3"/>
+    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
     </svg>
   )
 }
 
 function ChevronIcon({ direction }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-      fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      {direction === "left"
-        ? <polyline points="15 18 9 12 15 6"/>
-        : <polyline points="9 18 15 12 9 6"/>}
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      {direction === "left" ? <polyline points="15 18 9 12 15 6"/> : <polyline points="9 18 15 12 9 6"/>}
     </svg>
   )
 }
+
+/* ─── STOCK BADGE ──────────────────────────────────────────────── */
+
+function StockBadge({ status, tiny = false }) {
+  const cfg = STOCK_CONFIG[status] ?? STOCK_CONFIG.available
+  if (status === "available") return null // No hace falta mostrar si está disponible
+  return (
+    <span className={`inline-flex items-center gap-1 border rounded-full font-medium ${tiny ? "text-[9px] px-1.5 py-0.5" : "text-[10px] px-2 py-0.5"} ${cfg.color}`}>
+      <span className={`w-1 h-1 rounded-full ${cfg.dot}`} />
+      {cfg.label}
+    </span>
+  )
+}
+
+/* ─── PRODUCT META PILLS ───────────────────────────────────────── */
+
+function MetaPills({ product, tiny = false }) {
+  if (!product) return null
+  const shipping     = parseFloat(product.shipping_price) > 0
+  const installation = parseFloat(product.installation_price) > 0
+  const keys         = product.has_extra_keys
+  if (!shipping && !installation && !keys) return null
+  const cls = tiny
+    ? "inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded-full border"
+    : "inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border"
+
+  return (
+    <div className="flex flex-wrap gap-1 mt-1.5">
+      {shipping && (
+        <span className={`${cls} bg-blue-50 text-blue-500 border-blue-100`}>
+          🚚 {tiny ? "" : "Envío "}{parseFloat(product.shipping_price).toFixed(0)}€
+        </span>
+      )}
+      {installation && (
+        <span className={`${cls} bg-violet-50 text-violet-500 border-violet-100`}>
+          🔧 {tiny ? "" : "Inst. "}{parseFloat(product.installation_price).toFixed(0)}€
+        </span>
+      )}
+      {keys && (
+        <span className={`${cls} bg-amber-50 text-amber-600 border-amber-200`}>
+          🗝 {tiny ? "" : "Llaves "}{product.extra_key_price ? `${parseFloat(product.extra_key_price).toFixed(0)}€/ud` : "extra"}
+        </span>
+      )}
+    </div>
+  )
+}
+
+/* ─── FILTER SELECT ─────────────────────────────────────────────── */
 
 function FilterSelect({ value, onChange, options, placeholder }) {
   const hasValue = value !== ""
@@ -109,7 +156,7 @@ function FilterSelect({ value, onChange, options, placeholder }) {
       >
         <option value="">{placeholder}</option>
         {options.map((o) => (
-          <option key={o} value={o}>{o}</option>
+          <option key={o.value ?? o} value={o.value ?? o}>{o.label ?? o}</option>
         ))}
       </select>
       <div className={`pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 ${hasValue ? "text-white" : "text-slate-400"}`}>
@@ -121,12 +168,13 @@ function FilterSelect({ value, onChange, options, placeholder }) {
   )
 }
 
-/* ---------------- FEATURED CARD ---------------- */
+/* ─── FEATURED CARD ─────────────────────────────────────────────── */
 
 function FeaturedCard({ variant, cart, setCart, onViewDetail }) {
-  const [qty, setQty] = useState(1)
-  const cartItem = cart.find((c) => c.id === variant.id)
-  const productName = variant.product_name
+  const [qty, setQty]   = useState(1)
+  const cartItem        = cart.find((c) => c.id === variant.id)
+  const productName     = variant.product?.name ?? variant.product_name
+  const product         = variant.product
 
   function handleAdd(e) {
     e.stopPropagation()
@@ -140,6 +188,8 @@ function FeaturedCard({ variant, cart, setCart, onViewDetail }) {
     })
   }
 
+  const isUnavailable = variant.stock_status === "out_of_stock"
+
   return (
     <div className="w-72 shrink-0 bg-white rounded-2xl border border-amber-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col overflow-hidden group">
       <div
@@ -147,10 +197,13 @@ function FeaturedCard({ variant, cart, setCart, onViewDetail }) {
         onClick={() => onViewDetail(productName, [variant])}
       >
         <ProductIcon name={productName} size={44} />
-        <div className="absolute top-2 left-2">
+        <div className="absolute top-2 left-2 flex flex-col gap-1">
           <span className="flex items-center gap-1 bg-amber-400 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
             Destacado
           </span>
+          {variant.stock_status && variant.stock_status !== "available" && (
+            <StockBadge status={variant.stock_status} tiny />
+          )}
         </div>
         <div className="absolute inset-0 bg-orange-500/0 group-hover:bg-orange-500/10 transition-colors duration-200 flex items-center justify-center">
           <div className="opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-1 group-hover:translate-y-0">
@@ -162,11 +215,12 @@ function FeaturedCard({ variant, cart, setCart, onViewDetail }) {
         {cartItem && (
           <div className="absolute bottom-2 left-0 right-0 flex flex-wrap gap-1 justify-center px-2">
             <span className="text-[10px] bg-orange-500 text-white font-bold px-1.5 py-0.5 rounded-md font-mono">
-              {variant.sku.split("-").slice(-1)[0]} ×{cartItem.qty}
+              {(variant.sku ?? "").split("-").slice(-1)[0]} ×{cartItem.qty}
             </span>
           </div>
         )}
       </div>
+
       <div className="flex flex-col flex-1 p-3 gap-2.5">
         <div className="flex items-start justify-between gap-2">
           <h3
@@ -179,11 +233,16 @@ function FeaturedCard({ variant, cart, setCart, onViewDetail }) {
             <EyeIcon />
           </button>
         </div>
+
+        <MetaPills product={product} tiny />
+
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-mono text-slate-400">{variant.sku}</span>
-          <span className="font-extrabold text-orange-500 text-lg">${parseFloat(variant.price).toFixed(2)}</span>
+          <span className="font-extrabold text-orange-500 text-lg">{parseFloat(variant.price).toFixed(2)} €</span>
         </div>
+
         <div className="flex-1" />
+
         <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
           <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden shrink-0">
             <button onClick={(e) => { e.stopPropagation(); setQty((q) => Math.max(1, q - 1)) }} className="w-7 h-8 flex items-center justify-center text-slate-400 hover:bg-orange-50 hover:text-orange-500 transition-colors text-lg">−</button>
@@ -192,13 +251,14 @@ function FeaturedCard({ variant, cart, setCart, onViewDetail }) {
           </div>
           <button
             onClick={handleAdd}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white text-xs font-semibold py-2 rounded-xl transition-all"
+            disabled={isUnavailable}
+            className="flex-1 flex items-center justify-center gap-1.5 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white text-xs font-semibold py-2 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
               <path d="M2.05 2.05h2l2.66 12.42a2 2 0 002 1.58h9.78a2 2 0 001.95-1.57l1.65-7.43H5.12"/>
             </svg>
-            {cartItem ? `Añadir más (${cartItem.qty})` : "Añadir"}
+            {isUnavailable ? "Sin stock" : cartItem ? `Añadir más (${cartItem.qty})` : "Añadir"}
           </button>
         </div>
       </div>
@@ -206,7 +266,7 @@ function FeaturedCard({ variant, cart, setCart, onViewDetail }) {
   )
 }
 
-/* ---------------- FEATURED CAROUSEL ---------------- */
+/* ─── FEATURED CAROUSEL ─────────────────────────────────────────── */
 
 function FeaturedCarousel({ featured, cart, setCart, onViewDetail }) {
   const scrollRef = useRef(null)
@@ -243,12 +303,14 @@ function FeaturedCarousel({ featured, cart, setCart, onViewDetail }) {
   )
 }
 
-/* ---------------- PRODUCT CARD ---------------- */
+/* ─── PRODUCT CARD ──────────────────────────────────────────────── */
 
 function ProductCard({ name, variants, cart, setCart, compact, onViewDetail }) {
   const [selected, setSelected] = useState(variants[0])
-  const [qty, setQty] = useState(1)
-  const cartItem = cart.find((c) => c.id === selected.id)
+  const [qty, setQty]           = useState(1)
+  const cartItem                = cart.find((c) => c.id === selected.id)
+  const product                 = selected.product
+  const isUnavailable           = selected.stock_status === "out_of_stock"
 
   function handleAdd(e) {
     e.stopPropagation()
@@ -264,11 +326,20 @@ function ProductCard({ name, variants, cart, setCart, compact, onViewDetail }) {
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col overflow-hidden group">
+      {/* Imagen */}
       <div
         className={`relative bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center text-orange-300 cursor-pointer ${compact ? "h-40" : "h-52"}`}
         onClick={() => onViewDetail(name, variants)}
       >
         <ProductIcon name={name} size={compact ? 30 : 40} />
+
+        {/* Stock badge si no está disponible */}
+        {selected.stock_status && selected.stock_status !== "available" && (
+          <div className="absolute top-2 left-2">
+            <StockBadge status={selected.stock_status} tiny />
+          </div>
+        )}
+
         <div className="absolute inset-0 bg-orange-500/0 group-hover:bg-orange-500/10 transition-colors duration-200 flex items-center justify-center">
           <div className="opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-1 group-hover:translate-y-0">
             <span className="flex items-center gap-1.5 bg-white text-orange-500 text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
@@ -282,13 +353,15 @@ function ProductCard({ name, variants, cart, setCart, compact, onViewDetail }) {
             if (!ci) return null
             return (
               <span key={v.id} className="text-[10px] bg-orange-500 text-white font-bold px-1.5 py-0.5 rounded-md font-mono">
-                {v.sku.split("-").slice(-1)[0]} ×{ci.qty}
+                {(v.sku ?? "").split("-").slice(-1)[0]} ×{ci.qty}
               </span>
             )
           })}
         </div>
       </div>
-      <div className={`flex flex-col flex-1 ${compact ? "p-3 gap-2.5" : "p-4 gap-3"}`}>
+
+      {/* Body */}
+      <div className={`flex flex-col flex-1 ${compact ? "p-3 gap-2" : "p-4 gap-3"}`}>
         <div className="flex items-start justify-between gap-2">
           <h3
             className={`font-bold text-slate-800 leading-snug cursor-pointer hover:text-orange-500 transition-colors ${compact ? "text-sm" : "text-base"}`}
@@ -300,12 +373,18 @@ function ProductCard({ name, variants, cart, setCart, compact, onViewDetail }) {
             <EyeIcon />
           </button>
         </div>
+
+        {/* Meta pills (envío, instalación, llaves) */}
+        {!compact && <MetaPills product={product} />}
+
+        {/* Variantes */}
         <div>
           <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1.5">Variante</p>
           <div className="flex flex-wrap gap-1.5">
             {variants.map((v) => {
-              const inCart = cart.find((c) => c.id === v.id)
+              const inCart  = cart.find((c) => c.id === v.id)
               const isActive = selected.id === v.id
+              const unavail = v.stock_status === "out_of_stock"
               return (
                 <button
                   key={v.id}
@@ -313,25 +392,34 @@ function ProductCard({ name, variants, cart, setCart, compact, onViewDetail }) {
                   className={`relative text-xs font-mono px-2.5 py-1.5 rounded-xl border transition-all ${
                     isActive
                       ? "bg-orange-500 border-orange-500 text-white shadow-sm"
-                      : "bg-white border-slate-200 text-slate-600 hover:border-orange-300 hover:text-orange-500"
+                      : unavail
+                        ? "bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed"
+                        : "bg-white border-slate-200 text-slate-600 hover:border-orange-300 hover:text-orange-500"
                   }`}
                 >
-                  {v.sku.split("-").slice(-1)[0]}
+                  {(v.sku ?? "—").split("-").slice(-1)[0]}
                   {inCart && !isActive && (
                     <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-green-400 border-2 border-white" />
+                  )}
+                  {unavail && !isActive && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-400 border-2 border-white" title="Sin stock" />
                   )}
                 </button>
               )
             })}
           </div>
         </div>
+
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-mono text-slate-400">{selected.sku}</span>
           <span className={`font-extrabold text-orange-500 transition-all ${compact ? "text-base" : "text-xl"}`}>
-            ${parseFloat(selected.price).toFixed(2)}
+            {parseFloat(selected.price).toFixed(2)} €
           </span>
         </div>
+
         <div className="flex-1" />
+
+        {/* Add to cart */}
         <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
           <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden shrink-0">
             <button onClick={(e) => { e.stopPropagation(); setQty((q) => Math.max(1, q - 1)) }} className="w-8 h-9 flex items-center justify-center text-slate-400 hover:bg-orange-50 hover:text-orange-500 transition-colors text-lg">−</button>
@@ -340,13 +428,14 @@ function ProductCard({ name, variants, cart, setCart, compact, onViewDetail }) {
           </div>
           <button
             onClick={handleAdd}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white text-sm font-semibold py-2 rounded-xl transition-all"
+            disabled={isUnavailable}
+            className="flex-1 flex items-center justify-center gap-1.5 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white text-sm font-semibold py-2 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
               <path d="M2.05 2.05h2l2.66 12.42a2 2 0 002 1.58h9.78a2 2 0 001.95-1.57l1.65-7.43H5.12"/>
             </svg>
-            {cartItem ? `Añadir más (${cartItem.qty})` : "Añadir al carrito"}
+            {isUnavailable ? "Sin stock" : cartItem ? `Añadir más (${cartItem.qty})` : "Añadir al carrito"}
           </button>
         </div>
       </div>
@@ -354,29 +443,30 @@ function ProductCard({ name, variants, cart, setCart, compact, onViewDetail }) {
   )
 }
 
-/* ---------------- HOME ---------------- */
+/* ─── HOME ──────────────────────────────────────────────────────── */
 
 export default function Home() {
-  const [allGrouped, setAllGrouped] = useState({})
-  const [grouped, setGrouped] = useState({})
-  const [featured, setFeatured] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [cols, setCols] = useState(3)
-  const [cart, setCart] = useState(loadCart)
-  const [search, setSearch] = useState("")
-  const [categoryFilter, setCategoryFilter] = useState("")
-  const [attributeTypeFilter, setAttributeTypeFilter] = useState("")
-  const [detail, setDetail] = useState(null)
+  const [allGrouped, setAllGrouped]           = useState({})
+  const [featured, setFeatured]               = useState([])
+  const [loading, setLoading]                 = useState(true)
+  const [cols, setCols]                       = useState(3)
+  const [cart, setCart]                       = useState(loadCart)
+  const [search, setSearch]                   = useState("")
+  const [categoryFilter, setCategoryFilter]   = useState("")
+  const [stockFilter, setStockFilter]         = useState("")
+  const [attributeTypeFilter, setAttrFilter]  = useState("")
+  const [detail, setDetail]                   = useState(null)
 
+  // Cargamos productos y destacados
   useEffect(() => {
     Promise.all([getFeaturedProducts(), getActiveProducts()]).then(([feat, active]) => {
       setFeatured(feat)
       setAllGrouped(active)
-      setGrouped(active)
       setLoading(false)
     })
   }, [])
 
+  // Categorías únicas
   const categories = useMemo(() => {
     const cats = new Set()
     Object.values(allGrouped).forEach((variants) => {
@@ -385,6 +475,7 @@ export default function Home() {
     return Array.from(cats).sort()
   }, [allGrouped])
 
+  // Tipos de atributo únicos
   const attributeTypes = useMemo(() => {
     const types = new Set()
     Object.values(allGrouped).forEach((variants) => {
@@ -393,38 +484,34 @@ export default function Home() {
     return Array.from(types).sort()
   }, [allGrouped])
 
-  useEffect(() => {
-    const filtered = Object.entries(allGrouped).reduce((acc, [name, variants]) => {
-      const matching = variants.filter((v) => {
-        const catOk = !categoryFilter || v.product?.category?.name === categoryFilter
-        const attrOk = !attributeTypeFilter || (v.attributes || []).some((a) => a.type === attributeTypeFilter)
-        return catOk && attrOk
-      })
-      if (matching.length > 0) acc[name] = matching
-      return acc
-    }, {})
-    setGrouped(filtered)
-  }, [allGrouped, categoryFilter, attributeTypeFilter])
+  // Filtrado local (búsqueda + categoría + atributo + stock)
+  const entries = useMemo(() => {
+    return Object.entries(allGrouped).filter(([name, variants]) => {
+      // Búsqueda por nombre
+      if (search && !name.toLowerCase().includes(search.toLowerCase())) {
+        // También buscar en SKUs
+        const skuMatch = variants.some((v) => (v.sku ?? "").toLowerCase().includes(search.toLowerCase()))
+        if (!skuMatch) return false
+      }
+      // Filtro categoría
+      if (categoryFilter && !variants.some((v) => v.product?.category?.name === categoryFilter)) return false
+      // Filtro atributo
+      if (attributeTypeFilter && !variants.some((v) => (v.attributes || []).some((a) => a.type === attributeTypeFilter))) return false
+      // Filtro stock: al menos una variante con ese estado
+      if (stockFilter && !variants.some((v) => v.stock_status === stockFilter)) return false
+      return true
+    })
+  }, [allGrouped, search, categoryFilter, attributeTypeFilter, stockFilter])
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" })
   }, [detail])
 
   if (detail) {
-    return (
-      <ProductDetail
-        name={detail.name}
-        variants={detail.variants}
-        onBack={() => setDetail(null)}
-      />
-    )
+    return <ProductDetail name={detail.name} variants={detail.variants} onBack={() => setDetail(null)} />
   }
 
-  const entries = Object.entries(grouped).filter(([name]) =>
-    name.toLowerCase().includes(search.toLowerCase())
-  )
-
-  const hasFilters = categoryFilter || attributeTypeFilter
+  const hasFilters = categoryFilter || attributeTypeFilter || stockFilter
 
   const gridClass = cols === 3
     ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
@@ -432,7 +519,7 @@ export default function Home() {
 
   return (
     <div>
-      {/* Carrusel de destacados */}
+      {/* Carrusel destacados */}
       {!loading && (
         <FeaturedCarousel
           featured={featured}
@@ -457,7 +544,7 @@ export default function Home() {
           </svg>
           <input
             type="text"
-            placeholder="Buscar producto..."
+            placeholder="Buscar producto o SKU…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full h-[42px] pl-9 pr-4 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
@@ -466,17 +553,29 @@ export default function Home() {
 
         <div className="h-6 w-px bg-slate-200 hidden sm:block" />
 
+        {/* Filtro Stock */}
+        <FilterSelect
+          value={stockFilter}
+          onChange={setStockFilter}
+          placeholder="Stock"
+          options={[
+            { value: "available",    label: "Disponible" },
+            { value: "out_of_stock", label: "Sin stock" },
+            { value: "next_batch",   label: "Lote próximo" },
+          ]}
+        />
+
         {categories.length > 0 && (
           <FilterSelect value={categoryFilter} onChange={setCategoryFilter} options={categories} placeholder="Categoría" />
         )}
 
         {attributeTypes.length > 0 && (
-          <FilterSelect value={attributeTypeFilter} onChange={setAttributeTypeFilter} options={attributeTypes} placeholder="Atributo" />
+          <FilterSelect value={attributeTypeFilter} onChange={setAttrFilter} options={attributeTypes} placeholder="Atributo" />
         )}
 
         {hasFilters && (
           <button
-            onClick={() => { setCategoryFilter(""); setAttributeTypeFilter("") }}
+            onClick={() => { setCategoryFilter(""); setAttrFilter(""); setStockFilter("") }}
             className="h-[42px] px-3.5 flex items-center gap-1.5 text-sm font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl hover:border-orange-300 hover:text-orange-500 transition-all"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -488,7 +587,7 @@ export default function Home() {
 
         <div className="h-6 w-px bg-slate-200 hidden sm:block" />
 
-        {/* Selector columnas */}
+        {/* Columnas */}
         <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden shrink-0">
           {[3, 4].map((n) => (
             <button
@@ -506,55 +605,21 @@ export default function Home() {
         </div>
       </div>
 
-      {/* CTA personalizado */}
-      <div className="relative mb-8 bg-white border border-orange-200 rounded-2xl p-5 flex items-center justify-between gap-4 overflow-hidden">
-
-        {/* Icono decorativo de fondo */}
-        <svg className="absolute right-24 opacity-[0.06] w-28 h-28 stroke-orange-500" viewBox="0 0 24 24" fill="none" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
-        </svg>
-
-        <div className="flex items-center gap-4 z-10">
-          <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center flex-shrink-0">
-            <svg className="w-5 h-5 stroke-orange-500" viewBox="0 0 24 24" fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-          </div>
-          <div>
-            <h2 className="text-sm font-extrabold text-slate-800 mb-0.5">
-              ¿No encuentras lo que buscas?
-            </h2>
-            <p className="text-xs text-slate-500">
-              Pídenos cualquier cerradura, medida o instalación a medida.
-            </p>
-            <div className="flex gap-1.5 mt-2 flex-wrap">
-              {["Medidas especiales", "Instalación urgente", "Presupuesto gratis"].map((tag) => (
-                <span key={tag} className="text-xs font-medium px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-100">
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <Link
-          to="/solicitud"
-          className="z-10 flex-shrink-0 flex items-center gap-1.5 bg-orange-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-orange-600 transition"
-        >
-          Solicitar
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-          </svg>
-        </Link>
-      </div>
-
       {/* Chips de filtros activos */}
       {hasFilters && (
         <div className="flex flex-wrap gap-2 mb-5">
+          {stockFilter && (
+            <span className="flex items-center gap-1.5 text-xs font-semibold bg-orange-100 text-orange-700 px-3 py-1.5 rounded-full">
+              {({ available: "Disponible", out_of_stock: "Sin stock", next_batch: "Lote próximo" })[stockFilter]}
+              <button onClick={() => setStockFilter("")} className="hover:text-orange-900">
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </span>
+          )}
           {categoryFilter && (
             <span className="flex items-center gap-1.5 text-xs font-semibold bg-orange-100 text-orange-700 px-3 py-1.5 rounded-full">
               {categoryFilter}
-              <button onClick={() => setCategoryFilter("")} className="hover:text-orange-900 transition-colors">
+              <button onClick={() => setCategoryFilter("")} className="hover:text-orange-900">
                 <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </span>
@@ -562,7 +627,7 @@ export default function Home() {
           {attributeTypeFilter && (
             <span className="flex items-center gap-1.5 text-xs font-semibold bg-orange-100 text-orange-700 px-3 py-1.5 rounded-full">
               {attributeTypeFilter}
-              <button onClick={() => setAttributeTypeFilter("")} className="hover:text-orange-900 transition-colors">
+              <button onClick={() => setAttrFilter("")} className="hover:text-orange-900">
                 <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </span>
@@ -570,7 +635,36 @@ export default function Home() {
         </div>
       )}
 
-      {/* Grid de productos */}
+      {/* CTA */}
+      <div className="relative mb-8 bg-white border border-orange-200 rounded-2xl p-5 flex items-center justify-between gap-4 overflow-hidden">
+        <svg className="absolute right-24 opacity-[0.06] w-28 h-28 stroke-orange-500" viewBox="0 0 24 24" fill="none" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+        </svg>
+        <div className="flex items-center gap-4 z-10">
+          <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 h-5 stroke-orange-500" viewBox="0 0 24 24" fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-sm font-extrabold text-slate-800 mb-0.5">¿No encuentras lo que buscas?</h2>
+            <p className="text-xs text-slate-500">Pídenos cualquier cerradura, medida o instalación a medida.</p>
+            <div className="flex gap-1.5 mt-2 flex-wrap">
+              {["Medidas especiales", "Instalación urgente", "Presupuesto gratis"].map((tag) => (
+                <span key={tag} className="text-xs font-medium px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-100">{tag}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+        <Link to="/solicitud" className="z-10 flex-shrink-0 flex items-center gap-1.5 bg-orange-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-orange-600 transition">
+          Solicitar
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </Link>
+      </div>
+
+      {/* Grid */}
       {loading ? (
         <div className={`grid ${gridClass} gap-4`}>
           {Array.from({ length: 6 }).map((_, i) => (
@@ -584,7 +678,15 @@ export default function Home() {
         </div>
       ) : entries.length === 0 ? (
         <div className="text-center py-20 text-slate-400">
+          <svg className="w-10 h-10 mx-auto mb-3 text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+          </svg>
           <p className="font-medium">No se encontraron productos</p>
+          {hasFilters && (
+            <button onClick={() => { setCategoryFilter(""); setAttrFilter(""); setStockFilter("") }} className="mt-2 text-xs text-orange-400 hover:text-orange-600 font-semibold transition">
+              Limpiar filtros
+            </button>
+          )}
         </div>
       ) : (
         <div className={`grid ${gridClass} gap-4`}>

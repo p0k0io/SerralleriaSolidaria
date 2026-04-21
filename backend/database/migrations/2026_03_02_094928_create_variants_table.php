@@ -19,6 +19,11 @@ return new class extends Migration
             $table->boolean('active')->default(true);
             $table->boolean('destacado')->default(false);
             $table->string('image')->nullable();
+
+            // Stock como estado (puede sobreescribir al del producto si se desea)
+            // 'available' | 'out_of_stock' | 'next_batch'
+            $table->enum('stock_status', ['available', 'out_of_stock', 'next_batch'])->default('available');
+
             $table->timestamps();
         });
     }

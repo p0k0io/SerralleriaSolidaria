@@ -32,53 +32,63 @@ Route::get('/test', function () {
     ]);
 });
 
-// Obtener todos los productos (activos e inactivos)
-Route::get('/products', [ProductController::class, 'index']);
+// Listados / búsqueda
+Route::get('/products',[ProductController::class, 'index']);          // Todos (activos + inactivos), acepta ?search=&active=&stock_status=&category_id=&has_extra_keys=
+Route::get('/products/featured',[ProductController::class, 'featured']);       // Solo los que tienen variantes destacadas activas
+Route::get('/products/search',[ProductController::class, 'search']);         // Búsqueda rápida: ?q=&category_id=&active=&stock_status=
 
-// Obtener productos destacados
-Route::get('/products/featured', [ProductController::class, 'featured']);
-Route::get('/variants/active', [VariantController::class, 'getActiveVariants']);
+// Detalle
+Route::get('/products/{id}',[ProductController::class, 'show']);
+
+// Creación
+Route::post('/products',[ProductController::class, 'store']);
+Route::post('/products/products-with-variants',[ProductController::class, 'storeWithVariants']);
+
+// Actualización
+Route::put('/products/{id}',[ProductController::class, 'update']);
+
+// Borrado
+Route::delete('/products/{id}',[ProductController::class, 'destroy']);
+
+// Activar / Desactivar producto
+Route::post('/products/enable/{id}',[ProductController::class, 'enable']);
+Route::post('/products/disable/{id}',[ProductController::class, 'disable']);
+
+// Añadir variante a un producto existente
+Route::post('/products/{id}/variants',[ProductController::class, 'addVariant']);
 
 
-Route::get('/requests', [RequestController::class, 'index']);
-Route::post('/requests', [RequestController::class, 'store']);
-Route::put('/requests/{id}', [RequestController::class, 'updateStatus']);
-Route::put('/requests/{id}/notes', [RequestController::class, 'updateNotes']);
-// Obtener un producto con sus variantes
-Route::get('/products/{id}', [ProductController::class, 'show']);
-
-// Crear producto
-Route::post('/products', [ProductController::class, 'store']);
-
-// Rutas adicionales para productos
-Route::post('/products/enable/{id}', [ProductController::class, 'enable']);
-Route::post('/products/disable/{id}', [ProductController::class, 'disable']);
-Route::post('/products/products-with-variants', [ProductController::class, 'storeWithVariants']);
-Route::post('/products/{id}/variants', [ProductController::class, 'addVariant']);
 
 /*
 |--------------------------------------------------------------------------
 | VARIANTS
-|--------------------------------------------------------------------------
-*/
+|--------------------------------------------------------------------------*/
 
 Route::prefix('variants')->group(function () {
 
-    Route::get('/', [VariantController::class, 'index']);
-    Route::get('/active', [VariantController::class, 'getActiveVariants']);
-    Route::get('/{id}', [VariantController::class, 'show']);
+    // Listados / búsqueda
+    // NOTA: rutas estáticas primero
+    Route::get('/active',          [VariantController::class, 'getActiveVariants']); // ?search=&stock_status=&featured=
+    Route::get('/search',          [VariantController::class, 'search']);             // ?q=&active=&featured=&stock_status=&product_id=
 
-    Route::post('/', [VariantController::class, 'store']);
-    Route::put('/{id}', [VariantController::class, 'update']);
-    Route::delete('/{id}', [VariantController::class, 'destroy']);
+    // CRUD
+    Route::get('/',                [VariantController::class, 'index']);              // ?search=&active=&featured=&stock_status=&product_id=
+    Route::post('/',               [VariantController::class, 'store']);
+    Route::get('/{id}',            [VariantController::class, 'show']);
+    Route::put('/{id}',            [VariantController::class, 'update']);
+    Route::delete('/{id}',         [VariantController::class, 'destroy']);
 
-    Route::post('/disable/{id}', [VariantController::class, 'disable']);
-    Route::post('/enable/{id}', [VariantController::class, 'enable']);
+    // Activar / Desactivar
+    Route::post('/enable/{id}',    [VariantController::class, 'enable']);
+    Route::post('/disable/{id}',   [VariantController::class, 'disable']);
 
-    Route::post('/{id}/toggle', [VariantController::class, 'toggleActive']);
+    // Toggles
+    Route::post('/{id}/toggle',          [VariantController::class, 'toggleActive']);
     Route::post('/{id}/toggle-featured', [VariantController::class, 'toggleFeatured']);
-});
 
+    // Stock
+    Route::patch('/{id}/stock',    [VariantController::class, 'updateStock']);        // Body: { stock_status: "available"|"out_of_stock"|"next_batch" }
+});
 /*
 |--------------------------------------------------------------------------
 | CATEGORIES

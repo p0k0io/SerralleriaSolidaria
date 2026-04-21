@@ -18,6 +18,11 @@ return new class extends Migration
             $table->string('manufacturer')->nullable();
             $table->foreignId('category_id')->constrained()->onDelete('cascade');
             $table->boolean('active')->default(true);
+            $table->decimal('shipping_price', 10, 2)->default(0);
+            $table->decimal('installation_price', 10, 2)->default(0); 
+            $table->enum('stock_status', ['available', 'out_of_stock', 'next_batch'])->default('available');
+            $table->boolean('has_extra_keys')->default(false);
+            $table->decimal('extra_key_price', 10, 2)->nullable();
             $table->timestamps();
         });
     }
