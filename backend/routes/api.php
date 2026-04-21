@@ -45,6 +45,15 @@ Route::get('/requests', [RequestController::class, 'index']);
 Route::post('/requests', [RequestController::class, 'store']);
 Route::put('/requests/{id}', [RequestController::class, 'updateStatus']);
 Route::put('/requests/{id}/notes', [RequestController::class, 'updateNotes']);
+
+Route::get('/requests/{id}', [RequestController::class, 'show']);
+Route::delete('/requests/{id}', [RequestController::class, 'destroy']);
+Route::get('/requests/status/{status}', [RequestController::class, 'filterByStatus']);
+Route::get('/requests/date-range', [RequestController::class, 'filterByDateRange']);
+Route::get('/requests/search', [RequestController::class, 'searchByCustomerName']);
+Route::get('/requests/summary', [RequestController::class, 'summaryByStatus']);
+Route::get('/requests/{id}/pdf', [RequestController::class, 'generatePdf']);
+Route::get('/requests/{id}/email', [RequestController::class, 'sendEmailNotification']);
 // Obtener un producto con sus variantes
 Route::get('/products/{id}', [ProductController::class, 'show']);
 
