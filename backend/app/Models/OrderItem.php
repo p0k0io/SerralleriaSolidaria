@@ -1,11 +1,21 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Order;
+use App\Models\Variant;
+use App\Models\Pack;
 
 class OrderItem extends Model
 {
+    protected $fillable = [
+        'order_id',
+        'variant_id',
+        'pack_id',
+        'quantity',
+        'price'
+    ];
+
     public function order()
     {
         return $this->belongsTo(Order::class);
