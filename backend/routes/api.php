@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\PackController;
 use App\Http\Controllers\Api\AttributeTypeController;
 use App\Http\Controllers\Api\AttributeValueController;
 use App\Http\Controllers\Api\RequestController;
+use App\Http\Controllers\Api\OrderController;
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PaymentController;
@@ -144,6 +145,17 @@ Route::prefix('attributes')->group(function () {
     Route::post('/values', [AttributeValueController::class, 'store']);
     Route::put('/values/{id}', [AttributeValueController::class, 'update']);
     Route::delete('/values/{id}', [AttributeValueController::class, 'destroy']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| ORDERS
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('orders')->group(function () {
+    Route::get('/prepared', [OrderController::class, 'getPreparedOrders']);
+    Route::get('/{id}', [OrderController::class, 'show']);
 });
 
 /*
