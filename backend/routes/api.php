@@ -205,4 +205,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::post('/checkout', [PaymentController::class, 'checkout']);
+
+    // Dashboard routes
+    Route::get('/dashboard/monthly-sales', [DashboardController::class, 'monthlySales']);
+    Route::get('/dashboard/daily-sales', [DashboardController::class, 'dailySales']);
 });

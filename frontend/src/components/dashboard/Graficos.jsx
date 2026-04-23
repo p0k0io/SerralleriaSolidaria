@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 
-// ── Datos fake ────────────────────────────────────────────────────────────────
-const MONTHLY_SALES = [
+// ── Datos fake como fallback ────────────────────────────────────────────────────
+const MONTHLY_SALES_FALLBACK = [
   { month: "Ene", total: 4200 },
   { month: "Feb", total: 3800 },
   { month: "Mar", total: 5100 },
@@ -16,7 +17,7 @@ const MONTHLY_SALES = [
   { month: "Dic", total: 11500 },
 ];
 
-const DAILY_SALES = Array.from({ length: 30 }, (_, i) => ({
+const DAILY_SALES_FALLBACK = Array.from({ length: 30 }, (_, i) => ({
   day: i + 1,
   total: Math.floor(150 + Math.sin(i * 0.6) * 80 + Math.cos(i * 0.3) * 60 + (i % 7 === 0 ? 200 : 0) + Math.random() * 40),
 }));
@@ -230,13 +231,52 @@ function Stat({ label, value, sub }) {
 
 
 export default function Graficos() {
-  const totalAnual = MONTHLY_SALES.reduce((s, m) => s + m.total, 0);
-  const totalMes   = DAILY_SALES.reduce((s, d) => s + d.total, 0);
-  const bestMonth  = MONTHLY_SALES.reduce((a, b) => (a.total > b.total ? a : b));
-  const bestDay    = DAILY_SALES.reduce((a, b) => (a.total > b.total ? a : b));
+  const { authFetch } = useAuth();
+  const [monthlySales, setMonthlySales] = useState(MONTHLY_SALES_FALLBACK);
+  const [dailySales, setDailySales] = useState(DAILY_SALES_FALLBACK);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSalesData = async () => {
+      try {
+        const [monthlyRes, dailyRes] = await Promise.all([
+          authFetch('http://localhost:8000/api/dashboard/monthly-sales'),
+          authFetch('http://localhost:8000/api/dashboard/daily-sales')
+        ]);
+
+        if (monthlyRes.ok) {
+          const monthlyData = await monthlyRes.json();
+          setMonthlySales(monthlyData.length > 0 ? monthlyData : MONTHLY_SALES_FALLBACK);
+        }
+
+        if (dailyRes.ok) {
+          const dailyData = await dailyRes.json();
+          setDailySales(dailyData.length > 0 ? dailyData : DAILY_SALES_FALLBACK);
+        }
+      } catch (error) {
+        console.error('Error fetching sales data:', error);
+        // Keep fallback data
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSalesData();
+  }, [authFetch]);
+
+  const totalAnual = monthlySales.reduce((s, m) => s + m.total, 0);
+  const totalMes   = dailySales.reduce((s, d) => s + d.total, 0);
+  const bestMonth  = monthlySales.reduce((a, b) => (a.total > b.total ? a : b));
+  const bestDay    = dailySales.reduce((a, b) => (a.total > b.total ? a : b));
 
   return (
     <div className="p-6 space-y-5">
+      {loading && (
+        <div className="text-center py-4">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+          <p className="mt-2 text-sm text-slate-500">Cargando datos...</p>
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 border-b border-slate-100">
@@ -250,7 +290,7 @@ export default function Graficos() {
           </div>
         </div>
         <div className="px-4 py-4" style={{ height: 280 }}>
-          <BarChart data={MONTHLY_SALES} />
+          <BarChart data={monthlySales} />
         </div>
       </div>
 
@@ -267,7 +307,7 @@ export default function Graficos() {
           </div>
         </div>
         <div className="px-4 py-4" style={{ height: 260 }}>
-          <LineChart data={DAILY_SALES} />
+          <LineChart data={dailySales} />
         </div>
       </div>
 
