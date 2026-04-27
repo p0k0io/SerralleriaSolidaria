@@ -1,5 +1,6 @@
 import { Outlet, NavLink } from "react-router-dom";
 import { useState } from "react";
+import { AdminToastProvider } from "../context/AdminToastContext";
 
 /* ── Icons (igual que los tuyos) ── */
 function Dashboard({ size = 18 }) {
@@ -218,7 +219,9 @@ export default function AdminLayout() {
           </div>
 
           <div className="content">
-            <Outlet />
+            <AdminToastProvider>
+              <Outlet />
+            </AdminToastProvider>
           </div>
         </div>
       </div>

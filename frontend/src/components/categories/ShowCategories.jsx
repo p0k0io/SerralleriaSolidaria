@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { useAdminToast } from "../../context/AdminToastContext";
 import CreateCategory from "./CreateCategory";
 
 // ── ICONOS ────────────────────────────────────────────────────────────────────
@@ -191,6 +192,7 @@ export function ShowCategories() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editing, setEditing] = useState(null);
+  const { showToast } = useAdminToast();
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -216,17 +218,27 @@ export function ShowCategories() {
 
   const deleteCategory = async (id) => {
     if (!confirm("¿Eliminar esta categoría?")) return;
-    await fetch(`http://localhost:8000/api/categories/${id}`, { method: "DELETE" });
+    const res = await fetch(`http://localhost:8000/api/categories/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      showToast("No se pudo eliminar la categoría", "error");
+      return;
+    }
+    showToast("Categoría eliminada");
     fetchCategories();
   };
 
   const updateCategory = async (id, payload) => {
-    await fetch(`http://localhost:8000/api/categories/${id}`, {
+    const res = await fetch(`http://localhost:8000/api/categories/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+    if (!res.ok) {
+      showToast("No se pudo actualizar la categoría", "error");
+      return;
+    }
     setEditing(null);
+    showToast("Categoría actualizada");
     fetchCategories();
   };
 

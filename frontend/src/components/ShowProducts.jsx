@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { useAdminToast } from "../context/AdminToastContext";
 
 const API = "http://localhost:8000/api";
 const STORAGE = "http://localhost:8000/storage";
@@ -298,7 +299,7 @@ function VariantRow({ variant, onToggle, onDelete, onUpdate, onToggleFeatured, o
 
 /* ─── NEW VARIANT FORM ───────────────────────────────────────── */
 
-function NewVariantForm({ productId, onCreated }) {
+function NewVariantForm({ productId, onCreated, showToast }) {
   const [sku, setSku]             = useState("");
   const [price, setPrice]         = useState("");
   const [stockStatus, setStock]   = useState("available");
@@ -314,10 +315,18 @@ function NewVariantForm({ productId, onCreated }) {
     form.append("product_id", productId);
     form.append("stock_status", stockStatus);
     if (imageFile) form.append("image", imageFile);
-    await fetch(`${API}/variants`, { method: "POST", body: form });
-    setSku(""); setPrice(""); setStock("available"); setImageFile(null);
-    setBusy(false);
-    onCreated();
+
+    try {
+      const res = await fetch(`${API}/variants`, { method: "POST", body: form });
+      if (!res.ok) throw new Error("No se pudo crear la variante");
+      setSku(""); setPrice(""); setStock("available"); setImageFile(null);
+      showToast("Variante creada");
+      onCreated();
+    } catch (err) {
+      showToast(err.message || "Error al crear variante", "error");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -341,64 +350,112 @@ function NewVariantForm({ productId, onCreated }) {
 
 /* ─── PRODUCT CARD ───────────────────────────────────────────── */
 
-function ProductCard({ product, onReload }) {
+function ProductCard({ product, onReload, showToast }) {
   const [open, setOpen]       = useState(false);
   const [editing, setEditing] = useState(false);
 
   async function toggle() {
-    await fetch(`${API}/products/${product.active ? "disable" : "enable"}/${product.id}`, { method: "POST" });
-    onReload();
+    try {
+      const res = await fetch(`${API}/products/${product.active ? "disable" : "enable"}/${product.id}`, { method: "POST" });
+      if (!res.ok) throw new Error("No se pudo actualizar el estado del producto");
+      showToast(product.active ? "Producto desactivado" : "Producto activado");
+      onReload();
+    } catch (err) {
+      showToast(err.message || "Error al cambiar estado", "error");
+    }
   }
 
   async function remove() {
     if (!confirm(`¿Eliminar "${product.name}"?`)) return;
-    await fetch(`${API}/products/${product.id}`, { method: "DELETE" });
-    onReload();
+    try {
+      const res = await fetch(`${API}/products/${product.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("No se pudo eliminar el producto");
+      showToast("Producto eliminado");
+      onReload();
+    } catch (err) {
+      showToast(err.message || "Error al eliminar producto", "error");
+    }
   }
 
   async function save(data) {
-    await fetch(`${API}/products/${product.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    setEditing(false);
-    onReload();
+    try {
+      const res = await fetch(`${API}/products/${product.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("No se pudo guardar el producto");
+      setEditing(false);
+      showToast("Producto actualizado");
+      onReload();
+    } catch (err) {
+      showToast(err.message || "Error al guardar producto", "error");
+    }
   }
 
   async function toggleVariant(id) {
-    await fetch(`${API}/variants/${id}/toggle`, { method: "POST" });
-    onReload();
+    try {
+      const res = await fetch(`${API}/variants/${id}/toggle`, { method: "POST" });
+      if (!res.ok) throw new Error("No se pudo cambiar el estado de la variante");
+      showToast("Estado de variante actualizado");
+      onReload();
+    } catch (err) {
+      showToast(err.message || "Error al actualizar variante", "error");
+    }
   }
 
   async function toggleFeatured(id) {
-    await fetch(`${API}/variants/${id}/toggle-featured`, { method: "POST" });
-    onReload();
+    try {
+      const res = await fetch(`${API}/variants/${id}/toggle-featured`, { method: "POST" });
+      if (!res.ok) throw new Error("No se pudo cambiar el estado de destacado");
+      showToast("Variante destacada actualizada");
+      onReload();
+    } catch (err) {
+      showToast(err.message || "Error al destacar variante", "error");
+    }
   }
 
   async function deleteVariant(id) {
     if (!confirm("¿Eliminar esta variante?")) return;
-    await fetch(`${API}/variants/${id}`, { method: "DELETE" });
-    onReload();
+    try {
+      const res = await fetch(`${API}/variants/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("No se pudo eliminar la variante");
+      showToast("Variante eliminada");
+      onReload();
+    } catch (err) {
+      showToast(err.message || "Error al eliminar variante", "error");
+    }
   }
 
   async function updateVariant(id, data) {
-    const form = new FormData();
-    form.append("_method", "PUT");
-    form.append("sku", data.sku ?? "");
-    form.append("price", data.price ?? "");
-    if (data.image instanceof File) form.append("image", data.image);
-    await fetch(`${API}/variants/${id}`, { method: "POST", body: form });
-    onReload();
+    try {
+      const form = new FormData();
+      form.append("_method", "PUT");
+      form.append("sku", data.sku ?? "");
+      form.append("price", data.price ?? "");
+      if (data.image instanceof File) form.append("image", data.image);
+      const res = await fetch(`${API}/variants/${id}`, { method: "POST", body: form });
+      if (!res.ok) throw new Error("No se pudo actualizar la variante");
+      showToast("Variante guardada");
+      onReload();
+    } catch (err) {
+      showToast(err.message || "Error al actualizar variante", "error");
+    }
   }
 
   async function updateVariantStock(id, stock_status) {
-    await fetch(`${API}/variants/${id}/stock`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ stock_status }),
-    });
-    onReload();
+    try {
+      const res = await fetch(`${API}/variants/${id}/stock`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stock_status }),
+      });
+      if (!res.ok) throw new Error("No se pudo actualizar el stock");
+      showToast("Stock de variante actualizado");
+      onReload();
+    } catch (err) {
+      showToast(err.message || "Error al actualizar stock", "error");
+    }
   }
 
   const firstVariantImage = product.variants?.find((v) => v.image)?.image;
@@ -468,7 +525,7 @@ function ProductCard({ product, onReload }) {
           ) : (
             <p className="text-sm text-slate-300 text-center py-4">Sin variantes aún</p>
           )}
-          <NewVariantForm productId={product.id} onCreated={onReload} />
+          <NewVariantForm productId={product.id} onCreated={onReload} showToast={showToast} />
         </div>
       )}
     </div>
@@ -482,6 +539,7 @@ export default function ShowProducts() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
   const [refresh, setRefresh]   = useState(false);
+  const { showToast } = useAdminToast();
 
   // Filtros
   const [search, setSearch]           = useState("");
@@ -659,7 +717,7 @@ export default function ShowProducts() {
         )}
 
         {!loading && !error && products.map((p) => (
-          <ProductCard key={p.id} product={p} onReload={reload} />
+          <ProductCard key={p.id} product={p} onReload={reload} showToast={showToast} />
         ))}
       </div>
     </div>
