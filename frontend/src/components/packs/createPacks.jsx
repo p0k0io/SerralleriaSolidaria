@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useAdminToast } from "../../context/AdminToastContext";
 
 function SearchInput({ value, onSelect, placeholder, fetchUrl, renderResult, renderSelected }) {
   const [query, setQuery] = useState(value ? renderSelected(value) : "");
@@ -149,9 +150,10 @@ function CategoryResult({ cat }) {
   );
 }
 
-export default function CreatePack() {
+export default function CreatePack({ onCreated }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const { showToast } = useAdminToast();
   const [description, setDescription] = useState("");
   const [active, setActive] = useState(true);
   const [rows, setRows] = useState([{ variant: null, quantity: 1 }]);
@@ -211,11 +213,14 @@ export default function CreatePack() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || data.error || "Error al crear el pack");
       setMessage(`✓ Pack "${data.name || name}" creado con éxito`);
+      showToast(`Pack "${data.name || name}" creado correctamente`);
       resetForm();
+      if (onCreated) onCreated();
       setTimeout(() => { setOpen(false); setMessage(""); }, 1800);
     } catch (err) {
       console.error(err);
       setMessage(err.message);
+      showToast(err.message, "error");
     } finally {
       setLoading(false);
     }

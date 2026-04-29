@@ -187,7 +187,7 @@ function EmptyState() {
 }
 
 // ── MAIN ──────────────────────────────────────────────────────────────────────
-export function ShowCategories() {
+export function ShowCategories({ refreshSignal }) {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -214,7 +214,7 @@ export function ShowCategories() {
     fetchCategories();
     window.addEventListener("focus", fetchCategories);
     return () => window.removeEventListener("focus", fetchCategories);
-  }, [fetchCategories]);
+  }, [fetchCategories, refreshSignal]);
 
   const deleteCategory = async (id) => {
     if (!confirm("¿Eliminar esta categoría?")) return;

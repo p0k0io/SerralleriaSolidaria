@@ -120,7 +120,7 @@ const ImagePlaceholder = () => (
   </div>
 );
 
-export default function ShowPacks() {
+export default function ShowPacks({ refreshSignal }) {
   const [packs, setPacks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -141,7 +141,7 @@ export default function ShowPacks() {
     }
   }
 
-  useEffect(() => { getPacks(); }, [refresh]);
+  useEffect(() => { getPacks(); }, [refresh, refreshSignal]);
 
   async function deletePack(id) {
     if (!confirm("¿Seguro que quieres eliminar este pack? Esta acción no se puede deshacer.")) return;

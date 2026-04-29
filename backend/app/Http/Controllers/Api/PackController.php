@@ -168,7 +168,7 @@ class PackController extends Controller
             return response()->json(['error' => 'Pack no encontrado'], 404);
         }
 
-        $pack->active(false);
+        $pack->delete();
 
         return response()->json(null, 204);
     }

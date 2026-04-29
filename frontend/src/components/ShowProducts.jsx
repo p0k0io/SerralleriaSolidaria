@@ -534,7 +534,7 @@ function ProductCard({ product, onReload, showToast }) {
 
 /* ─── MAIN COMPONENT ─────────────────────────────────────────── */
 
-export default function ShowProducts() {
+export default function ShowProducts({ refreshSignal }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
@@ -569,7 +569,7 @@ export default function ShowProducts() {
         setLoading(false);
       }
     })();
-  }, [refresh, search, activeFilter, stockFilter, categoryFilter]);
+  }, [refresh, refreshSignal, search, activeFilter, stockFilter, categoryFilter]);
 
   // Categorías únicas de los productos cargados
   const categories = useMemo(() => {
