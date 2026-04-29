@@ -85,7 +85,7 @@ class PaymentController extends Controller
             // 🧾 CREAR ORDER
             $order = Order::create([
                 'user_id' => $user->id,
-                'status' => 'completed',
+                'status' => 'nuevo',
                 'full_name' => $request->full_name,
                 'email' => $request->email,
                 'phone' => $request->phone,
