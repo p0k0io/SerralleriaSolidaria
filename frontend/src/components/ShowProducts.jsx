@@ -398,6 +398,7 @@ function ProductCard({ product, onReload }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ stock_status }),
     });
+    console.log("Stock updated:", stock_status);
     onReload();
   }
 
