@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 use App\Models\Variant;
+use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
@@ -166,10 +167,13 @@ class ProductController extends Controller
     /**
      * PUT /api/products/{id}
      */
-    public function update(Request $request, $id)
-    {
-        $product = Product::findOrFail($id);
+   public function update(Request $request, $id)
+{
+    Log::info('--- UPDATE PRODUCT START ---');
+    Log::info('Product ID:', ['id' => $id]);
+    Log::info('Request data:', $request->all());
 
+    try {
         $validated = $request->validate([
             'name'               => 'sometimes|string|max:255',
             'description'        => 'nullable|string',
@@ -183,18 +187,41 @@ class ProductController extends Controller
             'extra_key_price'    => 'nullable|numeric|min:0',
         ]);
 
-        // Si se desactivan las llaves extra, limpiar el precio
-        if (isset($validated['has_extra_keys']) && !$validated['has_extra_keys']) {
-            $validated['extra_key_price'] = null;
-        }
+        Log::info('Validated data:', $validated);
 
-        $product->update($validated);
+    } catch (ValidationException $e) {
+        Log::error('Validation failed:', $e->errors());
 
         return response()->json([
-            'message' => 'Product updated',
-            'data'    => $this->formatProduct($product->fresh(['variants', 'category'])),
-        ]);
+            'message' => 'Validation error',
+            'errors' => $e->errors(),
+        ], 422);
     }
+
+    $product = Product::findOrFail($id);
+
+    Log::info('Product BEFORE update:', $product->toArray());
+
+    // Lógica de negocio
+    if (isset($validated['has_extra_keys']) && !$validated['has_extra_keys']) {
+        $validated['extra_key_price'] = null;
+    }
+
+    Log::info('Final data to update:', $validated);
+
+    $product->update($validated);
+
+    $product->refresh();
+
+    Log::info('Product AFTER update:', $product->toArray());
+
+    Log::info('--- UPDATE PRODUCT END ---');
+
+    return response()->json([
+        'message' => 'Product updated',
+        'data'    => $this->formatProduct($product->fresh(['variants', 'category'])),
+    ]);
+}
 
     /**
      * DELETE /api/products/{id}
@@ -346,6 +373,8 @@ class ProductController extends Controller
             'active'       => $validated['active'] ?? true,
             'stock_status' => $validated['stock_status'] ?? 'available',
             'image'        => $path,
+            'destacado'     => false,
+            'stock_status' => $validated['stock_status'] ?? 'available',
         ]);
 
         return response()->json([

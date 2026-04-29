@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+use Illuminate\Support\Facades\Log;
 
 use Illuminate\Http\Request;
 use App\Models\Product;
@@ -23,6 +24,11 @@ use App\Models\Product;
  *     @OA\Property(property="description", type="string", example="Descripción del producto"),
  *     @OA\Property(property="manufacturer", type="string", example="Fabricante S.A."),
  *     @OA\Property(property="active", type="boolean", example=true),
+ *     @OA\Property(property="installation_price", type="number", format="float", example=10.99),
+ *     @OA\Property(property="shipping_price", type="number", format="float", example=5.99),
+ *     @OA\Property(property="stock_status", type="string", example="available"),
+ *     @OA\Property(property="has_extra_keys", type="boolean", example=false),
+ *     @OA\Property(property="extra_key_price", type="number", format="float", example=2.99),
  *     @OA\Property(property="created_at", type="string", format="date-time"),
  *     @OA\Property(property="updated_at", type="string", format="date-time")
  * )
@@ -87,6 +93,11 @@ class ProductController extends Controller
             'manufacturer' => 'nullable|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'active' => 'boolean',
+            'installation_price' => 'nullable|numeric|min:0',
+            'shipping_price' => 'nullable|numeric|min:0',
+            'stock_status' => 'nullable|in:available,out_of_stock,next_batch',
+            'has_extra_keys' => 'boolean',
+            'extra_key_price' => 'nullable|numeric|min:0',
         ]);
 
         $product = Product::create($request->all());

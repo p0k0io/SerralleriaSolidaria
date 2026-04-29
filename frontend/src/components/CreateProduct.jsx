@@ -72,7 +72,7 @@ function Card({ titulo, children }) {
 export default function CreateProduct() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
-    name: "", description: "", manufacturer: "", categoryId: "", active: true,
+    name: "", description: "", manufacturer: "", categoryId: "", active: true, 
     variants: [{ sku: "", price: "", active: true, image: null, attributes: {} }],
   });
   const [categories, setCategories] = useState([]);

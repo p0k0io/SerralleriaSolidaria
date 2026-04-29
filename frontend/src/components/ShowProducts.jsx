@@ -12,9 +12,9 @@ const img = (path) => {
 /* ─── CONSTANTES ─────────────────────────────────────────────── */
 
 const STOCK_CONFIG = {
-  available:    { label: "Disponible",     color: "bg-emerald-50 text-emerald-600 border-emerald-200",  dot: "bg-emerald-400" },
-  out_of_stock: { label: "Sin stock",      color: "bg-red-50 text-red-500 border-red-200",              dot: "bg-red-400" },
-  next_batch:   { label: "Lote próximo",   color: "bg-amber-50 text-amber-600 border-amber-200",        dot: "bg-amber-400" },
+  available:    { label: "Disponible",   color: "bg-emerald-50 text-emerald-600 border-emerald-200", dot: "bg-emerald-400" },
+  out_of_stock: { label: "Sin stock",    color: "bg-red-50 text-red-500 border-red-200",             dot: "bg-red-400" },
+  next_batch:   { label: "Lote próximo", color: "bg-amber-50 text-amber-600 border-amber-200",       dot: "bg-amber-400" },
 };
 
 const STOCK_OPTIONS = [
@@ -98,7 +98,7 @@ function SearchBar({ value, onChange }) {
   );
 }
 
-function FilterChip({ label, value, onChange, options, placeholder }) {
+function FilterChip({ value, onChange, options, placeholder }) {
   const active = value !== "";
   return (
     <div className="relative">
@@ -130,11 +130,28 @@ function EditProductForm({ product, onSave, onCancel }) {
     shipping_price:     product.shipping_price ?? 0,
     installation_price: product.installation_price ?? 0,
     stock_status:       product.stock_status ?? "available",
-    has_extra_keys:     product.has_extra_keys ?? false,
+    has_extra_keys:     Boolean(product.has_extra_keys),
     extra_key_price:    product.extra_key_price ?? "",
   });
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
+
+  function handleSave() {
+    // Construir payload con tipos correctos para el backend
+    const payload = {
+      name:               form.name,
+      description:        form.description,
+      manufacturer:       form.manufacturer,
+      shipping_price:     parseFloat(form.shipping_price) || 0,
+      installation_price: parseFloat(form.installation_price) || 0,
+      stock_status:       form.stock_status,
+      has_extra_keys:     form.has_extra_keys,          // booleano
+      extra_key_price:    form.has_extra_keys && form.extra_key_price !== ""
+                            ? parseFloat(form.extra_key_price)
+                            : null,
+    };
+    onSave(payload);
+  }
 
   const inputCls = "w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 transition";
   const labelCls = "text-xs font-semibold text-slate-400 mb-0.5 block";
@@ -162,19 +179,30 @@ function EditProductForm({ product, onSave, onCancel }) {
         </div>
         <div>
           <label className={labelCls}>Precio envío (€)</label>
-          <input type="number" min="0" step="0.01" value={form.shipping_price} onChange={(e) => set("shipping_price", e.target.value)} placeholder="0.00" className={inputCls} />
+          <input
+            type="number" min="0" step="0.01"
+            value={form.shipping_price}
+            onChange={(e) => set("shipping_price", e.target.value)}
+            placeholder="0.00"
+            className={inputCls}
+          />
         </div>
         <div>
           <label className={labelCls}>Precio instalación (€)</label>
-          <input type="number" min="0" step="0.01" value={form.installation_price} onChange={(e) => set("installation_price", e.target.value)} placeholder="0.00" className={inputCls} />
+          <input
+            type="number" min="0" step="0.01"
+            value={form.installation_price}
+            onChange={(e) => set("installation_price", e.target.value)}
+            placeholder="0.00"
+            className={inputCls}
+          />
         </div>
       </div>
 
       {/* Llaves extra */}
       <div className="flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 bg-white">
         <label className="flex items-center gap-2 cursor-pointer select-none">
-          <div className="relative">
-            <input type="checkbox" className="sr-only" checked={form.has_extra_keys} onChange={(e) => set("has_extra_keys", e.target.checked)} />
+          <div className="relative" onClick={() => set("has_extra_keys", !form.has_extra_keys)}>
             <div className={`w-9 h-5 rounded-full transition-colors ${form.has_extra_keys ? "bg-orange-500" : "bg-slate-200"}`} />
             <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.has_extra_keys ? "translate-x-4" : ""}`} />
           </div>
@@ -183,14 +211,27 @@ function EditProductForm({ product, onSave, onCancel }) {
         {form.has_extra_keys && (
           <div className="flex items-center gap-1.5 flex-1">
             <span className="text-xs text-slate-400">Precio/llave</span>
-            <input type="number" min="0" step="0.01" value={form.extra_key_price} onChange={(e) => set("extra_key_price", e.target.value)} placeholder="5.00" className="border border-slate-200 rounded-lg px-2 py-1 text-xs w-20 focus:outline-none focus:ring-2 focus:ring-orange-300" />
+            <input
+              type="number" min="0" step="0.01"
+              value={form.extra_key_price}
+              onChange={(e) => set("extra_key_price", e.target.value)}
+              placeholder="5.00"
+              className="border border-slate-200 rounded-lg px-2 py-1 text-xs w-20 focus:outline-none focus:ring-2 focus:ring-orange-300"
+            />
             <span className="text-xs text-slate-400">€</span>
           </div>
         )}
       </div>
 
+      {/* Vista previa de lo que se enviará */}
+      <div className="text-[10px] text-slate-400 bg-slate-50 rounded-lg px-2 py-1.5 font-mono leading-relaxed">
+        <span className="font-semibold text-slate-500">Payload: </span>
+        shipping={parseFloat(form.shipping_price)||0} · install={parseFloat(form.installation_price)||0} · keys={form.has_extra_keys?"sí":"no"}
+        {form.has_extra_keys && form.extra_key_price !== "" && ` · key_price=${parseFloat(form.extra_key_price)}`}
+      </div>
+
       <div className="flex gap-2 pt-1">
-        <button onClick={() => onSave(form)} className="bg-orange-500 text-white text-xs px-4 py-1.5 rounded-lg hover:bg-orange-600 transition font-medium">
+        <button onClick={handleSave} className="bg-orange-500 text-white text-xs px-4 py-1.5 rounded-lg hover:bg-orange-600 transition font-medium">
           Guardar
         </button>
         <button onClick={onCancel} className="text-slate-500 text-xs px-3 py-1.5 rounded-lg hover:bg-slate-100 transition">
@@ -204,9 +245,9 @@ function EditProductForm({ product, onSave, onCancel }) {
 /* ─── EXTRA INFO ROW (shipping / install / keys) ─────────────── */
 
 function ProductMeta({ product }) {
-  const hasShipping     = parseFloat(product.shipping_price) > 0;
-  const hasInstall      = parseFloat(product.installation_price) > 0;
-  const hasKeys         = product.has_extra_keys;
+  const hasShipping = parseFloat(product.shipping_price) > 0;
+  const hasInstall  = parseFloat(product.installation_price) > 0;
+  const hasKeys     = product.has_extra_keys;
   if (!hasShipping && !hasInstall && !hasKeys) return null;
 
   return (
@@ -270,7 +311,6 @@ function VariantRow({ variant, onToggle, onDelete, onUpdate, onToggleFeatured, o
           </div>
           <p className="text-sm font-semibold text-orange-500 tabular-nums shrink-0">{parseFloat(variant.price).toFixed(2)} €</p>
           <Badge active={variant.active} />
-          {/* Stock select inline */}
           <div className="relative shrink-0">
             <select
               value={variant.stock_status ?? "available"}
@@ -356,12 +396,31 @@ function ProductCard({ product, onReload }) {
     onReload();
   }
 
-  async function save(data) {
-    await fetch(`${API}/products/${product.id}`, {
+  // ── CORRECCIÓN CLAVE: enviamos todos los campos con tipos correctos ──
+  async function save(payload) {
+    const res = await fetch(`${API}/products/${product.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      // has_extra_keys debe ser boolean, los precios deben ser number o null
+      body: JSON.stringify({
+        name:               payload.name,
+        description:        payload.description ?? null,
+        manufacturer:       payload.manufacturer ?? null,
+        shipping_price:     payload.shipping_price,
+        installation_price: payload.installation_price,
+        stock_status:       payload.stock_status,
+        has_extra_keys:     payload.has_extra_keys,   // true/false
+        extra_key_price:    payload.extra_key_price,  // number o null
+      }),
     });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error("Error guardando producto:", err);
+      alert("Error al guardar: " + (err.message ?? res.status));
+      return;
+    }
+
     setEditing(false);
     onReload();
   }
@@ -387,6 +446,7 @@ function ProductCard({ product, onReload }) {
     form.append("_method", "PUT");
     form.append("sku", data.sku ?? "");
     form.append("price", data.price ?? "");
+    form.append("stock_status", data.stock_status ?? "available");
     if (data.image instanceof File) form.append("image", data.image);
     await fetch(`${API}/variants/${id}`, { method: "POST", body: form });
     onReload();
@@ -398,12 +458,10 @@ function ProductCard({ product, onReload }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ stock_status }),
     });
-    console.log("Stock updated:", stock_status);
     onReload();
   }
 
   const firstVariantImage = product.variants?.find((v) => v.image)?.image;
-  const stockCfg = STOCK_CONFIG[product.stock_status] ?? STOCK_CONFIG.available;
 
   return (
     <div className={`bg-white rounded-2xl border transition-all duration-200 overflow-hidden ${open ? "border-orange-200 shadow-md shadow-orange-50" : "border-slate-100 shadow-sm hover:border-orange-100 hover:shadow"}`}>
@@ -484,7 +542,6 @@ export default function ShowProducts() {
   const [error, setError]       = useState(null);
   const [refresh, setRefresh]   = useState(false);
 
-  // Filtros
   const [search, setSearch]           = useState("");
   const [activeFilter, setActive]     = useState("");
   const [stockFilter, setStock]       = useState("");
@@ -497,9 +554,9 @@ export default function ShowProducts() {
       try {
         setLoading(true);
         const params = new URLSearchParams();
-        if (search)       params.set("search", search);
-        if (activeFilter) params.set("active", activeFilter);
-        if (stockFilter)  params.set("stock_status", stockFilter);
+        if (search)         params.set("search", search);
+        if (activeFilter)   params.set("active", activeFilter);
+        if (stockFilter)    params.set("stock_status", stockFilter);
         if (categoryFilter) params.set("category_id", categoryFilter);
 
         const res = await fetch(`${API}/products?${params.toString()}`);
@@ -514,7 +571,6 @@ export default function ShowProducts() {
     })();
   }, [refresh, search, activeFilter, stockFilter, categoryFilter]);
 
-  // Categorías únicas de los productos cargados
   const categories = useMemo(() => {
     const map = {};
     products.forEach((p) => {
@@ -543,38 +599,17 @@ export default function ShowProducts() {
           <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
         </div>
 
-        {/* Toolbar de filtros */}
+        {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-2">
           <SearchBar value={search} onChange={setSearch} />
-
-          <FilterChip
-            value={activeFilter}
-            onChange={setActive}
-            placeholder="Estado"
-            options={[{ value: "1", label: "Activos" }, { value: "0", label: "Inactivos" }]}
-          />
-
-          <FilterChip
-            value={stockFilter}
-            onChange={setStock}
-            placeholder="Stock"
-            options={STOCK_OPTIONS}
-          />
-
+          <FilterChip value={activeFilter} onChange={setActive} placeholder="Estado"
+            options={[{ value: "1", label: "Activos" }, { value: "0", label: "Inactivos" }]} />
+          <FilterChip value={stockFilter} onChange={setStock} placeholder="Stock" options={STOCK_OPTIONS} />
           {categories.length > 0 && (
-            <FilterChip
-              value={categoryFilter}
-              onChange={setCategory}
-              placeholder="Categoría"
-              options={categories}
-            />
+            <FilterChip value={categoryFilter} onChange={setCategory} placeholder="Categoría" options={categories} />
           )}
-
           {hasFilters && (
-            <button
-              onClick={clearFilters}
-              className="h-[42px] px-3.5 flex items-center gap-1.5 text-sm font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl hover:border-orange-300 hover:text-orange-500 transition-all"
-            >
+            <button onClick={clearFilters} className="h-[42px] px-3.5 flex items-center gap-1.5 text-sm font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl hover:border-orange-300 hover:text-orange-500 transition-all">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
@@ -583,7 +618,7 @@ export default function ShowProducts() {
           )}
         </div>
 
-        {/* Chips de filtros activos */}
+        {/* Chips filtros activos */}
         {hasFilters && (
           <div className="flex flex-wrap gap-2 mt-3">
             {search && (
