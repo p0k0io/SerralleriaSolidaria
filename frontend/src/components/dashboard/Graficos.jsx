@@ -1,30 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 
-// ── Datos fake como fallback ────────────────────────────────────────────────────
-const MONTHLY_SALES_FALLBACK = [
-  { month: "Ene", total: 4200 },
-  { month: "Feb", total: 3800 },
-  { month: "Mar", total: 5100 },
-  { month: "Abr", total: 4700 },
-  { month: "May", total: 6300 },
-  { month: "Jun", total: 5900 },
-  { month: "Jul", total: 7200 },
-  { month: "Ago", total: 6100 },
-  { month: "Sep", total: 8400 },
-  { month: "Oct", total: 7800 },
-  { month: "Nov", total: 9200 },
-  { month: "Dic", total: 11500 },
-];
-
-const DAILY_SALES_FALLBACK = Array.from({ length: 30 }, (_, i) => ({
-  day: i + 1,
-  total: Math.floor(150 + Math.sin(i * 0.6) * 80 + Math.cos(i * 0.3) * 60 + (i % 7 === 0 ? 200 : 0) + Math.random() * 40),
-}));
-
 const ORANGE = "#f97316";
 const ORANGE_LIGHT = "#fed7aa";
-const ORANGE_DIM = "rgba(249,115,22,0.12)";
 const GRID = "#f1f5f9";
 const TEXT = "#94a3b8";
 const TEXT_DARK = "#475569";
@@ -74,7 +52,6 @@ function BarChart({ data }) {
       ctx.fillText(formatEur(val), PAD.left - 8, y);
     }
 
-    // Barras
     const barW = (chartW / data.length) * 0.55;
     const gap = chartW / data.length;
 
@@ -84,11 +61,9 @@ function BarChart({ data }) {
       const y = PAD.top + chartH - barH;
       const radius = 6;
 
-      // Sombra suave
       ctx.shadowColor = "rgba(249,115,22,0.18)";
       ctx.shadowBlur = 8;
 
-      // Gradiente
       const grad = ctx.createLinearGradient(0, y, 0, y + barH);
       grad.addColorStop(0, ORANGE);
       grad.addColorStop(1, ORANGE_LIGHT);
@@ -106,14 +81,12 @@ function BarChart({ data }) {
       ctx.fill();
       ctx.shadowBlur = 0;
 
-      // Etiqueta X
       ctx.fillStyle = TEXT_DARK;
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
       ctx.font = `11px Inter, system-ui, sans-serif`;
       ctx.fillText(d.month, x + barW / 2, PAD.top + chartH + 8);
 
-      // Valor encima
       if (barH > 20) {
         ctx.fillStyle = TEXT_DARK;
         ctx.textBaseline = "bottom";
@@ -150,7 +123,6 @@ function LineChart({ data }) {
 
     ctx.clearRect(0, 0, W, H);
 
-    // Cuadrícula y etiquetas Y
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
     ctx.font = `11px Inter, system-ui, sans-serif`;
@@ -197,7 +169,6 @@ function LineChart({ data }) {
     ctx.stroke();
 
     data.forEach((d, i) => {
-      // Punto
       ctx.beginPath();
       ctx.arc(px(i), py(d.total), 3.5, 0, Math.PI * 2);
       ctx.fillStyle = "#fff";
@@ -224,91 +195,120 @@ function Stat({ label, value, sub }) {
     <div className="flex flex-col">
       <span className="text-xs text-slate-400">{label}</span>
       <span className="text-lg font-bold text-slate-800">{value}</span>
-      {sub && <span className="text-xs text-emerald-500 font-medium">{sub}</span>}
+      {sub && <span className="text-xs text-slate-400 font-medium">{sub}</span>}
     </div>
   );
 }
 
+function ErrorCard({ message }) {
+  return (
+    <div className="m-5 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+       {message}
+    </div>
+  );
+}
+
+function LoadingSpinner({ text }) {
+  return (
+    <div className="flex items-center justify-center py-12 gap-3 text-slate-400">
+      <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+      </svg>
+      <span className="text-sm">{text}</span>
+    </div>
+  );
+}
 
 export default function Graficos() {
   const { authFetch } = useAuth();
-  const [monthlySales, setMonthlySales] = useState(MONTHLY_SALES_FALLBACK);
-  const [dailySales, setDailySales] = useState(DAILY_SALES_FALLBACK);
-  const [loading, setLoading] = useState(true);
+  const [monthlySales, setMonthlySales] = useState([]);
+  const [dailySales, setDailySales] = useState([]);
+  const [loadingMonthly, setLoadingMonthly] = useState(true);
+  const [loadingDaily, setLoadingDaily] = useState(true);
+  const [errorMonthly, setErrorMonthly] = useState(null);
+  const [errorDaily, setErrorDaily] = useState(null);
 
   useEffect(() => {
-    const fetchSalesData = async () => {
-      try {
-        const [monthlyRes, dailyRes] = await Promise.all([
-          authFetch('http://localhost:8000/api/dashboard/monthly-sales'),
-          authFetch('http://localhost:8000/api/dashboard/daily-sales')
-        ]);
+    authFetch("http://localhost:8000/api/dashboard/monthly-sales")
+      .then((r) => { if (!r.ok) throw new Error("Error al obtenir les vendes mensuals"); return r.json(); })
+      .then((data) => { setMonthlySales(data); setLoadingMonthly(false); })
+      .catch((e) => { setErrorMonthly(e.message); setLoadingMonthly(false); });
 
-        if (monthlyRes.ok) {
-          const monthlyData = await monthlyRes.json();
-          setMonthlySales(monthlyData.length > 0 ? monthlyData : MONTHLY_SALES_FALLBACK);
-        }
-
-        if (dailyRes.ok) {
-          const dailyData = await dailyRes.json();
-          setDailySales(dailyData.length > 0 ? dailyData : DAILY_SALES_FALLBACK);
-        }
-      } catch (error) {
-        console.error('Error fetching sales data:', error);
-        // Keep fallback data
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSalesData();
+    authFetch("http://localhost:8000/api/dashboard/daily-sales")
+      .then((r) => { if (!r.ok) throw new Error("Error al obtenir les vendes diàries"); return r.json(); })
+      .then((data) => { setDailySales(data); setLoadingDaily(false); })
+      .catch((e) => { setErrorDaily(e.message); setLoadingDaily(false); });
   }, [authFetch]);
 
+  // Calculados dinámicamente desde los datos reales
   const totalAnual = monthlySales.reduce((s, m) => s + m.total, 0);
-  const totalMes   = dailySales.reduce((s, d) => s + d.total, 0);
-  const bestMonth  = monthlySales.reduce((a, b) => (a.total > b.total ? a : b));
-  const bestDay    = dailySales.reduce((a, b) => (a.total > b.total ? a : b));
+  const totalMes = dailySales.reduce((s, d) => s + d.total, 0);
+  const bestMonth = monthlySales.length > 0 ? monthlySales.reduce((a, b) => (a.total > b.total ? a : b)) : null;
+  const bestDay = dailySales.length > 0 ? dailySales.reduce((a, b) => (a.total > b.total ? a : b)) : null;
+
+  // Etiquetas de período dinámicas
+  const currentYear = new Date().getFullYear();
+  const currentMonthLabel = new Date().toLocaleDateString("ca-ES", { month: "long", year: "numeric" });
 
   return (
     <div className="p-6 space-y-5">
-      {loading && (
-        <div className="text-center py-4">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-          <p className="mt-2 text-sm text-slate-500">Cargando datos...</p>
-        </div>
-      )}
 
+      {/* Ventas anuales */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 border-b border-slate-100">
           <div>
-            <h2 className="font-semibold text-slate-800">Ventas anuales</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Enero — Diciembre 2025</p>
+            <h2 className="font-semibold text-slate-800">Vendes anuals</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Gener — Desembre {currentYear}</p>
           </div>
-          <div className="flex gap-6">
-            <Stat label="Total año"   value={`${(totalAnual / 1000).toFixed(1)}k €`} sub="+12% vs año anterior" />
-            <Stat label="Mejor mes"   value={bestMonth.month} sub={`${(bestMonth.total / 1000).toFixed(1)}k €`} />
+          {!loadingMonthly && !errorMonthly && monthlySales.length > 0 && (
+            <div className="flex gap-6">
+              <Stat label="Total any" value={`${(totalAnual / 1000).toFixed(1)}k €`} />
+              <Stat label="Millor mes" value={bestMonth.month} sub={`${(bestMonth.total / 1000).toFixed(1)}k €`} />
+            </div>
+          )}
+        </div>
+        {loadingMonthly ? (
+          <LoadingSpinner text="Carregant vendes mensuals…" />
+        ) : errorMonthly ? (
+          <ErrorCard message={errorMonthly} />
+        ) : monthlySales.length === 0 ? (
+          <div className="flex items-center justify-center py-12 text-slate-400 text-sm">
+            No hi ha dades de vendes anuals
           </div>
-        </div>
-        <div className="px-4 py-4" style={{ height: 280 }}>
-          <BarChart data={monthlySales} />
-        </div>
+        ) : (
+          <div className="px-4 py-4" style={{ height: 280 }}>
+            <BarChart data={monthlySales} />
+          </div>
+        )}
       </div>
 
-
+      {/* Ventas del mes */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 border-b border-slate-100">
           <div>
-            <h2 className="font-semibold text-slate-800">Ventas del mes</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Abril 2026 — día a día</p>
+            <h2 className="font-semibold text-slate-800">Vendes del mes</h2>
+            <p className="text-xs text-slate-400 mt-0.5 capitalize">{currentMonthLabel} — dia a dia</p>
           </div>
-          <div className="flex gap-6">
-            <Stat label="Total mes"  value={`${totalMes.toLocaleString("es-ES")} €`} sub="+8% vs mes anterior" />
-            <Stat label="Mejor día"  value={`Día ${bestDay.day}`} sub={`${bestDay.total} €`} />
+          {!loadingDaily && !errorDaily && dailySales.length > 0 && (
+            <div className="flex gap-6">
+              <Stat label="Total mes" value={`${totalMes.toLocaleString("ca-ES")} €`} />
+              <Stat label="Millor dia" value={`Dia ${bestDay.day}`} sub={`${bestDay.total} €`} />
+            </div>
+          )}
+        </div>
+        {loadingDaily ? (
+          <LoadingSpinner text="Carregant vendes diàries…" />
+        ) : errorDaily ? (
+          <ErrorCard message={errorDaily} />
+        ) : dailySales.length === 0 ? (
+          <div className="flex items-center justify-center py-12 text-slate-400 text-sm">
+            No hi ha dades de vendes aquest mes
           </div>
-        </div>
-        <div className="px-4 py-4" style={{ height: 260 }}>
-          <LineChart data={dailySales} />
-        </div>
+        ) : (
+          <div className="px-4 py-4" style={{ height: 260 }}>
+            <LineChart data={dailySales} />
+          </div>
+        )}
       </div>
 
     </div>
