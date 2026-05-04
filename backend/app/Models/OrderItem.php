@@ -16,6 +16,8 @@ class OrderItem extends Model
         'price'
     ];
 
+    protected $with = ['variant', 'pack']; 
+
     public function order()
     {
         return $this->belongsTo(Order::class);
