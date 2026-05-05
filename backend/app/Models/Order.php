@@ -16,6 +16,7 @@ class Order extends Model
         'postal_code',
         'city',
         'country',
+       // 'order_tracking',
         'total_amount',
     ];
 

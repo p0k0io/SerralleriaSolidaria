@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('postal_code');
             $table->string('city');
             $table->string('country');
+           // $table->string('order_tracking');
             $table->decimal('total_amount', 10, 2);
             $table->timestamps();
         });

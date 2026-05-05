@@ -1,10 +1,13 @@
 <?php
 
 namespace App\Http\Controllers\Api;
-
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\OrderService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Order;
+use Illuminate\Support\Facades\Log;
+
 
 class OrderController extends Controller
 {
@@ -70,19 +73,21 @@ class OrderController extends Controller
         try {
             $orders = Order::with(['user', 'items', 'payment'])->get();
 
-            return response()->json($orders);
+            return response()->json(
+                $orders->map(fn ($order) => $this->formatOrder($order))->values()
+            );
 
         } catch (\Throwable $e) {
             return response()->json([
                 'error' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile(),
+                'line'  => $e->getLine(),
+                'file'  => $e->getFile(),
             ], 500);
         }
     }
 
     /**
-     * DETALLE DE UN PEDIDO
+     * DETALLE DE UN PEDIDO (admin)
      */
     public function show($id)
     {
@@ -96,17 +101,51 @@ class OrderController extends Controller
             ])->findOrFail($id);
 
             return response()->json($this->formatOrder($order));
-
         } catch (\Throwable $e) {
-            return response()->json([
-                'error' => 'Pedido no encontrado',
-                'debug' => $e->getMessage(),
-            ], 404);
+            return response()->json(['error' => 'Pedido no encontrado', 'debug' => $e->getMessage()], 404);
         }
     }
 
     /**
-     * ACTUALIZAR ESTADO (KANBAN DRAG & DROP)
+     * SEGUIMIENTO PÚBLICO — el cliente consulta su pedido sin auth
+     */
+    public function track($id)
+    {
+        try {
+            $order = Order::with(['items', 'payment'])->findOrFail($id);
+
+            return response()->json([
+                'id'           => $order->id,
+                'full_name'    => $order->full_name ?? '',
+                'email'        => $order->email ?? '',
+                'status'       => $order->status ?? 'nuevo',
+                'total_amount' => (float) ($order->total_amount ?? 0),
+                'created_at'   => $order->created_at,
+                'address'      => $order->address ?? '',
+                'city'         => $order->city ?? '',
+                'country'      => $order->country ?? '',
+
+                'items' => $order->items
+                    ? $order->items->map(fn ($item) => [
+                        'id'           => $item->id,
+                        'product_name' => $item->product_name ?? 'Producto',
+                        'quantity'     => $item->quantity ?? 1,
+                        'unit_price'   => (float) ($item->unit_price ?? 0),
+                    ])->values()->toArray()
+                    : [],
+
+                'timeline' => $this->buildTimeline($order),
+            ]);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['error' => 'Pedido no encontrado'], 404);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'Error interno'], 500);
+        }
+    }
+
+    /**
+     * ACTUALIZAR ESTADO (Kanban drag & drop / modal)
      */
     public function update(Request $request, $id)
     {
@@ -117,22 +156,17 @@ class OrderController extends Controller
                 'status' => 'required|in:nuevo,en_preparacion,empaquetando,listo_envio,enviado,completado,cancelado',
             ]);
 
-            $order->update([
-                'status' => $validated['status'],
-            ]);
+            $order->update(['status' => $validated['status'],]);
 
             return response()->json([
                 'message' => 'Pedido actualizado correctamente',
-                'order' => $this->formatOrder(
+                'order'   => $this->formatOrder(
                     $order->fresh()->load(['user', 'items.variant.product', 'items.pack', 'services.service', 'payment'])
-                ),
+                ),,
             ]);
 
         } catch (\Throwable $e) {
-            return response()->json([
-                'error' => 'Error actualizando pedido',
-                'debug' => $e->getMessage(),
-            ], 500);
+            return response()->json(['error' => 'Error actualizando pedido', 'debug' => $e->getMessage(),], 500);
         }
     }
 
@@ -143,21 +177,44 @@ class OrderController extends Controller
     {
         try {
             Order::findOrFail($id)->delete();
-
-            return response()->json([
-                'message' => 'Pedido eliminado correctamente',
-            ]);
-
+            return response()->json(['message' => 'Pedido eliminado correctamente',]);
         } catch (\Throwable $e) {
-            return response()->json([
-                'error' => 'Error eliminando pedido',
-                'debug' => $e->getMessage(),
-            ], 500);
+            return response()->json(['error' => 'Error eliminando pedido', 'debug' => $e->getMessage(),], 500);
         }
     }
 
     /**
-     * FORMATEO SEGURO PARA FRONTEND (SIN CRASHES)
+     * TIMELINE SINTÉTICO — genera el historial a partir del estado actual.
+     * Cuando tengas tabla de historial real, sustituye esto por la relación.
+     */
+    private function buildTimeline(Order $order): array
+    {
+        $statusOrder = ['nuevo', 'en_preparacion', 'empaquetando', 'listo_envio', 'enviado', 'completado'];
+
+        $labels = [
+            'nuevo'          => 'Pedido confirmado y pago procesado.',
+            'en_preparacion' => 'Nuestro equipo ha comenzado la preparación.',
+            'empaquetando'   => 'Tu pedido está siendo embalado.',
+            'listo_envio'    => 'Tu pedido está listo para el transportista.',
+            'enviado'        => 'Tu pedido está en camino.',
+            'completado'     => 'Pedido entregado. ¡Gracias!',
+        ];
+
+        $currentIdx = array_search($order->status, $statusOrder);
+        if ($currentIdx === false) return [];
+
+        return collect(array_slice($statusOrder, 0, $currentIdx + 1))
+            ->map(fn ($s) => [
+                'status' => $s,
+                'date'   => $order->updated_at->toISOString(),
+                'note'   => $labels[$s] ?? '',
+            ])
+            ->values()
+            ->toArray();
+    }
+
+    /**
+     * FORMATEO SEGURO — normaliza los datos para el frontend admin
      */
     private function formatOrder(Order $order): array
     {
@@ -173,8 +230,9 @@ class OrderController extends Controller
             'country' => $order->country ?? '',
             'status' => $order->status ?? 'nuevo',
             'total_amount' => (float) ($order->total_amount ?? 0),
-            'created_at' => $order->created_at,
-            'updated_at' => $order->updated_at,
+            'created_at'   => $order->created_at,
+            'updated_at'   => $order->updated_at,
+
             'user' => $order->user ? [
                 'id' => $order->user->id,
                 'name' => $order->user->name,
