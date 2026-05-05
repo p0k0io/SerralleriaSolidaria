@@ -165,6 +165,14 @@ Route::post('/stripe/webhook',      [PaymentController::class, 'webhook']);
 
 /*
 |--------------------------------------------------------------------------
+| SEGUIMIENTO DE PEDIDO (público — el cliente busca por TRK-XXXXXXXX)
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/orders/track/{tracking}', [OrderController::class, 'track']);
+
+/*
+|--------------------------------------------------------------------------
 | PROTECTED ROUTES (SANCTUM)
 |--------------------------------------------------------------------------
 */

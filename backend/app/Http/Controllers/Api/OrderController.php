@@ -35,7 +35,7 @@ class OrderController extends Controller
     public function show($id)
     {
         try {
-            $order = Order::with(['user', 'items', 'payment'])->findOrFail($id);
+            $order = Order::with(['user', 'items.variant', 'items.pack', 'payment'])->findOrFail($id);
             return response()->json($this->formatOrder($order));
         } catch (\Throwable $e) {
             return response()->json(['error' => 'Pedido no encontrado', 'debug' => $e->getMessage()], 404);
@@ -43,40 +43,62 @@ class OrderController extends Controller
     }
 
     /**
-     * SEGUIMIENTO PÚBLICO — el cliente consulta su pedido sin auth
+     * SEGUIMIENTO PÚBLICO — busca por order_tracking (ej: TRK-XXXXXXXX)
+     * Ruta pública: GET /api/orders/track/{tracking}
      */
-    public function track($id)
+    public function track($tracking)
     {
-        try {
-            $order = Order::with(['items', 'payment'])->findOrFail($id);
+        // Sanitizar la entrada por si viene con espacios o en minúsculas
+        $tracking = strtoupper(trim($tracking));
 
+        $order = Order::with(['items.variant', 'items.pack', 'payment'])
+            ->where('order_tracking', $tracking)
+            ->first();
+
+        // Si no existe devolvemos 404 manualmente (sin firstOrFail para evitar
+        // que el catch genérico lo enmascare como 500)
+        if (!$order) {
+            return response()->json(['error' => 'Pedido no encontrado'], 404);
+        }
+
+        try {
             return response()->json([
-                'id'           => $order->id,
-                'full_name'    => $order->full_name ?? '',
-                'email'        => $order->email ?? '',
-                'status'       => $order->status ?? 'nuevo',
-                'total_amount' => (float) ($order->total_amount ?? 0),
-                'created_at'   => $order->created_at,
-                'address'      => $order->address ?? '',
-                'city'         => $order->city ?? '',
-                'country'      => $order->country ?? '',
+                'id'             => $order->id,
+                'order_tracking' => $order->order_tracking,
+                'full_name'      => $order->full_name ?? '',
+                'email'          => $order->email ?? '',
+                'status'         => $order->status ?? 'nuevo',
+                'total_amount'   => (float) ($order->total_amount ?? 0),
+                'created_at'     => $order->created_at,
+                'address'        => $order->address ?? '',
+                'city'           => $order->city ?? '',
+                'country'        => $order->country ?? '',
 
                 'items' => $order->items
-                    ? $order->items->map(fn ($item) => [
-                        'id'           => $item->id,
-                        'product_name' => $item->product_name ?? 'Producto',
-                        'quantity'     => $item->quantity ?? 1,
-                        'unit_price'   => (float) ($item->unit_price ?? 0),
-                    ])->values()->toArray()
+                    ? $order->items->map(function ($item) {
+                        $name = 'Producto';
+                        if ($item->variant && $item->variant->product) {
+                            $name = $item->variant->product->name ?? 'Producto';
+                        } elseif ($item->pack) {
+                            $name = $item->pack->name ?? 'Pack';
+                        } elseif ($item->product_name) {
+                            $name = $item->product_name;
+                        }
+
+                        return [
+                            'id'           => $item->id,
+                            'product_name' => $name,
+                            'quantity'     => $item->quantity ?? 1,
+                            'unit_price'   => (float) ($item->price ?? $item->unit_price ?? 0),
+                        ];
+                    })->values()->toArray()
                     : [],
 
                 'timeline' => $this->buildTimeline($order),
             ]);
 
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json(['error' => 'Pedido no encontrado'], 404);
         } catch (\Throwable $e) {
-            return response()->json(['error' => 'Error interno'], 500);
+            return response()->json(['error' => 'Error interno', 'debug' => $e->getMessage()], 500);
         }
     }
 
@@ -97,7 +119,7 @@ class OrderController extends Controller
             return response()->json([
                 'message' => 'Pedido actualizado correctamente',
                 'order'   => $this->formatOrder(
-                    $order->fresh()->load(['user', 'items', 'payment'])
+                    $order->fresh()->load(['user', 'items.variant', 'items.pack', 'payment'])
                 ),
             ]);
 
@@ -120,8 +142,7 @@ class OrderController extends Controller
     }
 
     /**
-     * TIMELINE SINTÉTICO — genera el historial a partir del estado actual.
-     * Cuando tengas tabla de historial real, sustituye esto por la relación.
+     * TIMELINE SINTÉTICO
      */
     private function buildTimeline(Order $order): array
     {
@@ -155,18 +176,19 @@ class OrderController extends Controller
     private function formatOrder(Order $order): array
     {
         return [
-            'id'           => $order->id,
-            'full_name'    => $order->full_name ?? '',
-            'email'        => $order->email ?? '',
-            'phone'        => $order->phone ?? '',
-            'address'      => $order->address ?? '',
-            'postal_code'  => $order->postal_code ?? '',
-            'city'         => $order->city ?? '',
-            'country'     => $order->country ?? '',
-            'status'       => $order->status ?? 'nuevo',
-            'total_amount' => (float) ($order->total_amount ?? 0),
-            'created_at'   => $order->created_at,
-            'updated_at'   => $order->updated_at,
+            'id'             => $order->id,
+            'order_tracking' => $order->order_tracking ?? null,
+            'full_name'      => $order->full_name ?? '',
+            'email'          => $order->email ?? '',
+            'phone'          => $order->phone ?? '',
+            'address'        => $order->address ?? '',
+            'postal_code'    => $order->postal_code ?? '',
+            'city'           => $order->city ?? '',
+            'country'        => $order->country ?? '',
+            'status'         => $order->status ?? 'nuevo',
+            'total_amount'   => (float) ($order->total_amount ?? 0),
+            'created_at'     => $order->created_at,
+            'updated_at'     => $order->updated_at,
 
             'user' => $order->user ? [
                 'id'    => $order->user->id,
@@ -182,21 +204,20 @@ class OrderController extends Controller
 
             'items' => $order->items
                 ? $order->items->map(function ($item) {
-
-                    // 🔥 nombre del producto desde relaciones reales
                     $name = 'Producto';
-
                     if ($item->variant && $item->variant->product) {
                         $name = $item->variant->product->name ?? 'Producto';
                     } elseif ($item->pack) {
                         $name = $item->pack->name ?? 'Pack';
+                    } elseif ($item->product_name) {
+                        $name = $item->product_name;
                     }
 
                     return [
                         'id'           => $item->id,
                         'product_name' => $name,
                         'quantity'     => $item->quantity ?? 1,
-                        'unit_price'   => (float) ($item->price ?? 0),
+                        'unit_price'   => (float) ($item->price ?? $item->unit_price ?? 0),
                         'variant_id'   => $item->variant_id,
                         'pack_id'      => $item->pack_id,
                     ];
