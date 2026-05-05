@@ -71,7 +71,7 @@ class OrderController extends Controller
     public function index()
     {
         try {
-            $orders = Order::with(['user', 'items', 'payment'])->get();
+            $orders = Order::with(['user', 'items.variant', 'items.pack', 'payment'])->get();
 
             return response()->json(
                 $orders->map(fn ($order) => $this->formatOrder($order))->values()
@@ -219,16 +219,15 @@ class OrderController extends Controller
     private function formatOrder(Order $order): array
     {
         return [
-            'id' => $order->id,
-            'order_number' => 'PED-' . str_pad($order->id, 3, '0', STR_PAD_LEFT),
-            'full_name' => $order->full_name ?? '',
-            'email' => $order->email ?? '',
-            'phone' => $order->phone ?? '',
-            'address' => $order->address ?? '',
-            'postal_code' => $order->postal_code ?? '',
-            'city' => $order->city ?? '',
-            'country' => $order->country ?? '',
-            'status' => $order->status ?? 'nuevo',
+            'id'           => $order->id,
+            'full_name'    => $order->full_name ?? '',
+            'email'        => $order->email ?? '',
+            'phone'        => $order->phone ?? '',
+            'address'      => $order->address ?? '',
+            'postal_code'  => $order->postal_code ?? '',
+            'city'         => $order->city ?? '',
+            'country'     => $order->country ?? '',
+            'status'       => $order->status ?? 'nuevo',
             'total_amount' => (float) ($order->total_amount ?? 0),
             'created_at'   => $order->created_at,
             'updated_at'   => $order->updated_at,
@@ -243,32 +242,29 @@ class OrderController extends Controller
                 'payment_status' => $order->payment->payment_status ?? null,
                 'transaction_id' => $order->payment->transaction_id ?? null,
             ] : null,
-            'items' => $order->items ? $order->items->map(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'quantity' => $item->quantity ?? 1,
-                    'price' => isset($item->price) ? (float) $item->price : null,
-                    'unit_price' => isset($item->unit_price) ? (float) $item->unit_price : null,
-                    'status' => $item->status ?? null,
-                    'variant' => $item->variant ? [
-                        'id' => $item->variant->id,
-                        'sku' => $item->variant->sku,
-                        'product_name' => $item->variant->product->name ?? ($item->product_name ?? 'Producto'),
-                        'image' => $item->variant->image,
-                    ] : null,
-                    'pack' => $item->pack ? [
-                        'id' => $item->pack->id,
-                        'name' => $item->pack->name,
-                    ] : null,
-                ];
-            })->values()->toArray() : [],
-            'services' => $order->services ? $order->services->map(function ($service) {
-                return [
-                    'id' => $service->id,
-                    'service_name' => $service->service->name ?? 'Servicio',
-                    'price' => $service->price,
-                ];
-            })->values()->toArray() : [],
+
+            'items' => $order->items
+                ? $order->items->map(function ($item) {
+
+                    // 🔥 nombre del producto desde relaciones reales
+                    $name = 'Producto';
+
+                    if ($item->variant && $item->variant->product) {
+                        $name = $item->variant->product->name ?? 'Producto';
+                    } elseif ($item->pack) {
+                        $name = $item->pack->name ?? 'Pack';
+                    }
+
+                    return [
+                        'id'           => $item->id,
+                        'product_name' => $name,
+                        'quantity'     => $item->quantity ?? 1,
+                        'unit_price'   => (float) ($item->price ?? 0),
+                        'variant_id'   => $item->variant_id,
+                        'pack_id'      => $item->pack_id,
+                    ];
+                })->values()->toArray()
+                : [],
         ];
     }
 }
