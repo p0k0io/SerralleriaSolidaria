@@ -419,29 +419,21 @@ function ProductCard({ product, onReload, showToast }) {
 
   // ── CORRECCIÓN CLAVE: enviamos todos los campos con tipos correctos ──
   async function save(payload) {
-    const res = try {
+    try {
       const res = await fetch(`${API}/products/${product.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-      // has_extra_keys debe ser boolean, los precios deben ser number o null
         body: JSON.stringify({
-        name:               payload.name,
-        description:        payload.description ?? null,
-        manufacturer:       payload.manufacturer ?? null,
-        shipping_price:     payload.shipping_price,
-        installation_price: payload.installation_price,
-        stock_status:       payload.stock_status,
-        has_extra_keys:     payload.has_extra_keys,   // true/false
-        extra_key_price:    payload.extra_key_price,  // number o null
-      }),
+          name:               payload.name,
+          description:        payload.description ?? null,
+          manufacturer:       payload.manufacturer ?? null,
+          shipping_price:     payload.shipping_price,
+          installation_price: payload.installation_price,
+          stock_status:       payload.stock_status,
+          has_extra_keys:     payload.has_extra_keys,   // true/false
+          extra_key_price:    payload.extra_key_price,  // number o null
+        }),
       });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      console.error("Error guardando producto:", err);
-      alert("Error al guardar: " + (err.message ?? res.status));
-      return;
-    }
 
       if (!res.ok) throw new Error("No se pudo guardar el producto");
       setEditing(false);
