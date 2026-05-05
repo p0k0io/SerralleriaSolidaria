@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Variant extends Model
 {
-    protected $fillable = ['product_id', 'sku', 'price', 'active', 'image', 'destacado'];
+    protected $fillable = ['product_id', 'sku', 'price', 'active', 'image', 'destacado', 'stock_status'];
     
     protected $casts = [
         'destacado' => 'boolean',
+        'stock_status' => 'string',
     ];
 
     public function product()
