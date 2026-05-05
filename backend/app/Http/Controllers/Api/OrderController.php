@@ -162,7 +162,7 @@ class OrderController extends Controller
                 'message' => 'Pedido actualizado correctamente',
                 'order'   => $this->formatOrder(
                     $order->fresh()->load(['user', 'items.variant.product', 'items.pack', 'services.service', 'payment'])
-                ),,
+                ),
             ]);
 
         } catch (\Throwable $e) {
