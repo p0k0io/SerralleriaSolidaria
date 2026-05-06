@@ -93,7 +93,6 @@ class PaymentController extends Controller
                 'postal_code'    => $request->postal_code,
                 'city'           => $request->city,
                 'country'        => $request->country,
-                'status'     => 'pendiente',
                 'total_amount'   => $total,
             ]);
 
@@ -131,7 +130,6 @@ class PaymentController extends Controller
                         'order_id' => $order->id,
                         'variant_id' => $item['id'] ?? null,  // ← el frontend envía 'id', no 'variant_id'
                         'product_name' => $item['product_name'] ?? 'Producto',
-                        'pack_id' => $item['pack_id'] ?? null,
                         'quantity' => $item['qty'],
                         'unit_price' => $item['price'] * $item['qty'],
                         'status' => 'pendiente',
