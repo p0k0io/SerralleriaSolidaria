@@ -6,6 +6,7 @@ use App\Models\OrderItem;
 use App\Models\OrderService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 
 
@@ -65,31 +66,27 @@ class OrderController extends Controller
         }));
     }
 
-    /**
-     * LISTADO PARA ADMIN (KANBAN)
-     */
-    public function index()
+    // ─── LISTADO ADMIN (Kanban) ──────────────────────────────────────────────
+
+    public function index(): JsonResponse
     {
         try {
-            $orders = Order::with(['user', 'items.variant', 'items.pack', 'payment'])->get();
+            $orders = Order::with(['user', 'items.variant.product', 'items.pack', 'payment'])
+                ->latest()
+                ->get()
+                ->map(fn ($order) => $this->formatOrder($order))
+                ->values();
 
-            return response()->json(
-                $orders->map(fn ($order) => $this->formatOrder($order))->values()
-            );
+            return response()->json($orders);
 
         } catch (\Throwable $e) {
-            return response()->json([
-                'error' => $e->getMessage(),
-                'line'  => $e->getLine(),
-                'file'  => $e->getFile(),
-            ], 500);
+            return $this->serverError($e);
         }
     }
 
-    /**
-     * DETALLE DE UN PEDIDO (admin)
-     */
-    public function show($id)
+    // ─── DETALLE ADMIN ───────────────────────────────────────────────────────
+
+    public function show(int $id): JsonResponse
     {
         try {
             $order = Order::with([
@@ -101,53 +98,79 @@ class OrderController extends Controller
             ])->findOrFail($id);
 
             return response()->json($this->formatOrder($order));
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return response()->json(['error' => 'Pedido no encontrado'], 404);
+
         } catch (\Throwable $e) {
-            return response()->json(['error' => 'Pedido no encontrado', 'debug' => $e->getMessage()], 404);
+            return $this->serverError($e);
         }
     }
 
-    /**
-     * SEGUIMIENTO PÚBLICO — el cliente consulta su pedido sin auth
-     */
-    public function track($id)
+    // ─── TRACKING PÚBLICO — GET /api/orders/track/{tracking} ─────────────────
+
+    public function track(string $tracking): JsonResponse
     {
+        $tracking = strtoupper(trim($tracking));
+
+        $order = Order::with(['items.variant.product', 'items.pack'])
+            ->where('order_tracking', $tracking)
+            ->first();
+
+        if (! $order) {
+            return response()->json(['error' => 'Pedido no encontrado'], 404);
+        }
+
         try {
-            $order = Order::with(['items', 'payment'])->findOrFail($id);
-
             return response()->json([
-                'id'           => $order->id,
-                'full_name'    => $order->full_name ?? '',
-                'email'        => $order->email ?? '',
-                'status'       => $order->status ?? 'nuevo',
-                'total_amount' => (float) ($order->total_amount ?? 0),
-                'created_at'   => $order->created_at,
-                'address'      => $order->address ?? '',
-                'city'         => $order->city ?? '',
-                'country'      => $order->country ?? '',
-
-                'items' => $order->items
-                    ? $order->items->map(fn ($item) => [
-                        'id'           => $item->id,
-                        'product_name' => $item->product_name ?? 'Producto',
-                        'quantity'     => $item->quantity ?? 1,
-                        'unit_price'   => (float) ($item->unit_price ?? 0),
-                    ])->values()->toArray()
-                    : [],
-
-                'timeline' => $this->buildTimeline($order),
+                'id'             => $order->id,
+                'order_tracking' => $order->order_tracking,
+                'status'         => $order->status ?? 'nuevo',
+                'total_amount'   => (float) ($order->total_amount ?? 0),
+                'created_at'     => $order->created_at,
+                'address'        => $order->address ?? '',
+                'city'           => $order->city ?? '',
+                'country'        => $order->country ?? '',
+                'items'          => $this->formatItems($order->items),
+                'timeline'       => $this->buildTimeline($order),
             ]);
 
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json(['error' => 'Pedido no encontrado'], 404);
         } catch (\Throwable $e) {
-            return response()->json(['error' => 'Error interno'], 500);
+            return $this->serverError($e);
         }
     }
 
-    /**
-     * ACTUALIZAR ESTADO (Kanban drag & drop / modal)
-     */
-    public function update(Request $request, $id)
+    // ─── PEDIDOS DEL USUARIO AUTENTICADO — GET /api/orders/my ───────────────
+    // Nueva ruta necesaria para OrdersPage.jsx
+
+    public function myOrders(Request $request): JsonResponse
+    {
+        try {
+            $orders = Order::with(['items'])
+                ->where('user_id', $request->user()->id)
+                ->latest()
+                ->get()
+                ->map(fn ($order) => [
+                    'id'             => $order->id,
+                    'order_tracking' => $order->order_tracking ?? null,
+                    'full_name'      => $order->full_name ?? '',
+                    'status'         => $order->status ?? 'nuevo',
+                    'total_amount'   => (float) ($order->total_amount ?? 0),
+                    'created_at'     => $order->created_at,
+                    'items_count'    => $order->items?->count() ?? 0,
+                ])
+                ->values();
+
+            return response()->json($orders);
+
+        } catch (\Throwable $e) {
+            return $this->serverError($e);
+        }
+    }
+
+    // ─── ACTUALIZAR ESTADO (Kanban) ──────────────────────────────────────────
+
+    public function update(Request $request, int $id): JsonResponse
     {
         try {
             $order = Order::findOrFail($id);
@@ -161,31 +184,46 @@ class OrderController extends Controller
             return response()->json([
                 'message' => 'Pedido actualizado correctamente',
                 'order'   => $this->formatOrder(
-                    $order->fresh()->load(['user', 'items.variant.product', 'items.pack', 'services.service', 'payment'])
+                    $order->fresh()->load(['user', 'items.variant.product', 'items.pack', 'services.service.variant.product', 'items.pack', 'payment'])
                 ),
             ]);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return response()->json(['error' => 'Pedido no encontrado'], 404);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['error' => 'Estado no válido', 'details' => $e->errors()], 422);
 
         } catch (\Throwable $e) {
             return response()->json(['error' => 'Error actualizando pedido', 'debug' => $e->getMessage(),], 500);
         }
     }
 
-    /**
-     * ELIMINAR PEDIDO
-     */
-    public function destroy($id)
+    // ─── ELIMINAR ────────────────────────────────────────────────────────────
+
+    public function destroy(int $id): JsonResponse
     {
         try {
             Order::findOrFail($id)->delete();
             return response()->json(['message' => 'Pedido eliminado correctamente',]);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return response()->json(['error' => 'Pedido no encontrado'], 404);
+
         } catch (\Throwable $e) {
             return response()->json(['error' => 'Error eliminando pedido', 'debug' => $e->getMessage(),], 500);
         }
     }
 
+    // ─── PRIVADOS ────────────────────────────────────────────────────────────
+
+    // ─── PRIVADOS ────────────────────────────────────────────────────────────
+
     /**
-     * TIMELINE SINTÉTICO — genera el historial a partir del estado actual.
-     * Cuando tengas tabla de historial real, sustituye esto por la relación.
+     * Timeline sintético basado en el estado actual del pedido.
+     * Todos los pasos anteriores (incluyendo el actual) se muestran con
+     * updated_at como fecha, que es lo más aproximado disponible sin una
+     * tabla de historial dedicada.
      */
     private function buildTimeline(Order $order): array
     {
@@ -201,7 +239,9 @@ class OrderController extends Controller
         ];
 
         $currentIdx = array_search($order->status, $statusOrder);
-        if ($currentIdx === false) return [];
+        if ($currentIdx === false) {
+            return [];
+        }
 
         return collect(array_slice($statusOrder, 0, $currentIdx + 1))
             ->map(fn ($s) => [
@@ -214,23 +254,52 @@ class OrderController extends Controller
     }
 
     /**
-     * FORMATEO SEGURO — normaliza los datos para el frontend admin
+     * Formatea los items resolviendo el nombre desde variant→product o pack.
+     */
+    private function formatItems($items): array
+    {
+        if (! $items) {
+            return [];
+        }
+
+        return $items->map(function ($item) {
+            $name = match (true) {
+                $item->variant?->product !== null => $item->variant->product->name ?? 'Producto',
+                $item->pack !== null             => $item->pack->name ?? 'Pack',
+                (bool) $item->product_name       => $item->product_name,
+                default                          => 'Producto',
+            };
+
+            return [
+                'id'           => $item->id,
+                'product_name' => $name,
+                'quantity'     => $item->quantity ?? 1,
+                'unit_price'   => (float) ($item->price ?? $item->unit_price ?? 0),
+            ];
+        })
+        ->values()
+        ->toArray();
+    }
+
+    /**
+     * Normaliza todos los campos de un pedido para el panel admin.
      */
     private function formatOrder(Order $order): array
     {
         return [
-            'id'           => $order->id,
-            'full_name'    => $order->full_name ?? '',
-            'email'        => $order->email ?? '',
-            'phone'        => $order->phone ?? '',
-            'address'      => $order->address ?? '',
-            'postal_code'  => $order->postal_code ?? '',
-            'city'         => $order->city ?? '',
-            'country'     => $order->country ?? '',
-            'status'       => $order->status ?? 'nuevo',
-            'total_amount' => (float) ($order->total_amount ?? 0),
-            'created_at'   => $order->created_at,
-            'updated_at'   => $order->updated_at,
+            'id'             => $order->id,
+            'order_tracking' => $order->order_tracking ?? null,
+            'full_name'      => $order->full_name ?? '',
+            'email'          => $order->email ?? '',
+            'phone'          => $order->phone ?? '',
+            'address'        => $order->address ?? '',
+            'postal_code'    => $order->postal_code ?? '',
+            'city'           => $order->city ?? '',
+            'country'        => $order->country ?? '',
+            'status'         => $order->status ?? 'nuevo',
+            'total_amount'   => (float) ($order->total_amount ?? 0),
+            'created_at'     => $order->created_at,
+            'updated_at'     => $order->updated_at,
 
             'user' => $order->user ? [
                 'id' => $order->user->id,
@@ -243,28 +312,24 @@ class OrderController extends Controller
                 'transaction_id' => $order->payment->transaction_id ?? null,
             ] : null,
 
-            'items' => $order->items
-                ? $order->items->map(function ($item) {
-
-                    // 🔥 nombre del producto desde relaciones reales
-                    $name = 'Producto';
-
-                    if ($item->variant && $item->variant->product) {
-                        $name = $item->variant->product->name ?? 'Producto';
-                    } elseif ($item->pack) {
-                        $name = $item->pack->name ?? 'Pack';
-                    }
-
-                    return [
-                        'id'           => $item->id,
-                        'product_name' => $name,
-                        'quantity'     => $item->quantity ?? 1,
-                        'unit_price'   => (float) ($item->price ?? 0),
-                        'variant_id'   => $item->variant_id,
-                        'pack_id'      => $item->pack_id,
-                    ];
-                })->values()->toArray()
-                : [],
+            'items' => $this->formatItems($order->items),
         ];
+    }
+
+    /**
+     * Respuesta de error 500 estandarizada.
+     * En producción no expone debug; en local sí.
+     */
+    private function serverError(\Throwable $e): JsonResponse
+    {
+        $body = ['error' => 'Error interno del servidor'];
+
+        if (config('app.debug')) {
+            $body['debug']   = $e->getMessage();
+            $body['file']    = $e->getFile();
+            $body['line']    = $e->getLine();
+        }
+
+        return response()->json($body, 500);
     }
 }
