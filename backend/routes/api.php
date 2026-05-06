@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\AttributeTypeController;
 use App\Http\Controllers\Api\AttributeValueController;
 use App\Http\Controllers\Api\RequestController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\OrderItemsController;
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PaymentController;
@@ -138,6 +139,19 @@ Route::prefix('attributes')->group(function () {
 Route::prefix('orders')->group(function () {
     Route::get('/prepared', [OrderController::class, 'getPreparedOrders']);
     Route::get('/{id}', [OrderController::class, 'show']);
+});
+
+
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('/orders/{order}/items', [OrderItemController::class, 'index']);
+    Route::get('/orders/{order}/items/{item}', [OrderItemController::class, 'show']);
+    Route::delete('/orders/{order}/items/{item}', [OrderItemController::class, 'destroy']);
+
+    // Rutas de status (normalmente protegidas también por rol admin)
+    Route::patch('/orders/{order}/items/{item}/status', [OrderItemController::class, 'updateStatus']);
+    Route::patch('/orders/{order}/items/status/bulk', [OrderItemController::class, 'bulkUpdateStatus']);
+
 });
 
 /*

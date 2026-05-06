@@ -13,17 +13,17 @@ export default function MetaPills({ product, tiny = false }) {
     <div className="flex flex-wrap gap-1 mt-1.5">
       {shipping && (
         <span className={`${cls} bg-blue-50 text-blue-500 border-blue-100`}>
-          🚚 {tiny ? "" : "Envío "}{parseFloat(product.shipping_price).toFixed(0)}€
+          {tiny ? "" : "Envío "}{parseFloat(product.shipping_price).toFixed(0)}€
         </span>
       )}
       {installation && (
         <span className={`${cls} bg-violet-50 text-violet-500 border-violet-100`}>
-          🔧 {tiny ? "" : "Inst. "}{parseFloat(product.installation_price).toFixed(0)}€
+          {tiny ? "" : "Inst. "}{parseFloat(product.installation_price).toFixed(0)}€
         </span>
       )}
       {keys && (
         <span className={`${cls} bg-amber-50 text-amber-600 border-amber-200`}>
-          🗝 {tiny ? "" : "Llaves "}{product.extra_key_price ? `${parseFloat(product.extra_key_price).toFixed(0)}€/ud` : "extra"}
+         {tiny ? "" : "Llaves "}{product.extra_key_price ? `${parseFloat(product.extra_key_price).toFixed(0)}€/ud` : "extra"}
         </span>
       )}
     </div>
