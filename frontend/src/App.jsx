@@ -26,11 +26,9 @@ import AttributeManager from "./components/AttributeManager"
 import RequestsList from "./pages/admin/RequestsList";
 import Orders from "./pages/admin/OrdersBoards"
 
-
 import Success from "./pages/Success"
 import { CartProvider } from "./components/shoppingCart/CartContext"
 import OrderTracking from "./components/orders/Ordertracking";
-import OrdersPage from "./components/orders/Orderspage";
 
 function App() {
   return (
@@ -47,7 +45,6 @@ function App() {
             <Route path="atr" element={<AttributeManager />} />
             <Route path="solicitud" element={<CustomRequestPage />} />
             <Route path="/seguimiento" element={<OrderTracking />} />
-            <Route path="mis-pedidos" element={<OrdersPage />} />
 
           </Route>
 
