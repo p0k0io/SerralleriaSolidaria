@@ -10,6 +10,7 @@ use Stripe\Stripe;
 use Stripe\Checkout\Session;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\OrderItem;
 
 class PaymentController extends Controller
 {
@@ -65,6 +66,8 @@ class PaymentController extends Controller
                     'quantity' => $item['qty'],
                 ];
 
+
+
                 $total += ($item['price'] * $item['qty']);
             }
 
@@ -93,6 +96,8 @@ class PaymentController extends Controller
                 'total_amount'   => $total,
             ]);
 
+            
+
             Log::info("🧾 Order creada:", ['order_id' => $order->id, 'tracking' => $tracking]);
             Log::info("🌍 FRONT URL:", ['front_url' => config('app.front_url')]);
 
@@ -118,6 +123,22 @@ class PaymentController extends Controller
                 'payment_status' => 'paid',
                 'transaction_id' => $session->id,
             ]);
+
+            OrderItem::insert(
+                collect($cart)->map(function ($item) use ($order) {
+                    return [
+                        'order_id' => $order->id,
+                        'variant_id' => $item['id'] ?? null,  // ← el frontend envía 'id', no 'variant_id'
+                        'product_name' => $item['product_name'] ?? 'Producto',
+                        'quantity' => $item['qty'],
+                        'unit_price' => $item['price'] * $item['qty'],
+                        'status' => 'pendiente',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                })->toArray()
+            );
+
 
             Log::info("💾 Payment guardado");
 
@@ -172,10 +193,14 @@ class PaymentController extends Controller
 
         \Log::info('✅ Evento válido: ' . $event->type);
 
-        if ($event->type === 'checkout.session.completed') {
-            $session = $event->data->object;
-            \Log::info('💳 Pago completado', ['session_id' => $session->id]);
-        }
+    if ($event->type === 'checkout.session.completed') {
+        $session = $event->data->object;
+
+        \Log::info('💳 Pago completado', [
+            'session_id' => $session->id
+        ]);
+    }
+    
 
         return response()->json(['ok' => true]);
     }

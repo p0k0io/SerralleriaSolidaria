@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
+import { AdminToastProvider } from "../context/AdminToastContext";
 
 /* ─────────────────────────────────────────────────────────────
    DESIGN TOKENS  (edit here to retheme the whole panel)
@@ -761,7 +762,9 @@ export default function AdminLayout() {
               padding: 0,
             }}
           >
-            <Outlet />
+            <AdminToastProvider>
+              <Outlet />
+            </AdminToastProvider>
           </div>
         </main>
       </div>

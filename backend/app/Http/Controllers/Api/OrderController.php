@@ -1,10 +1,14 @@
 <?php
 
 namespace App\Http\Controllers\Api;
-
 use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\OrderService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
+
 
 class OrderController extends Controller
 {
@@ -12,6 +16,63 @@ class OrderController extends Controller
      * LISTADO PARA ADMIN (KANBAN)
      */
     public function index()
+    /**
+     * GET /api/orders/prepared
+     * Obtiene las órdenes preparadas para enviar con todos sus items y servicios
+     */
+    public function getPreparedOrders()
+    {
+        $orders = Order::where('status', 'listo_envio')
+            ->with([
+                'items.variant.product',
+                'items.pack',
+                'services.service'
+            ])
+            ->get();
+
+        return response()->json($orders->map(function ($order) {
+            return [
+                'id' => $order->id,
+                'order_number' => 'PED-' . str_pad($order->id, 3, '0', STR_PAD_LEFT),
+                'client' => $order->full_name ?? 'Cliente',
+                'email' => $order->email,
+                'phone' => $order->phone,
+                'city' => $order->city,
+                'total_amount' => $order->total_amount,
+                'items_count' => $order->items->count(),
+                'services_count' => $order->services->count(),
+                'items' => $order->items->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'quantity' => $item->quantity,
+                        'price' => $item->price,
+                        'variant' => $item->variant ? [
+                            'id' => $item->variant->id,
+                            'sku' => $item->variant->sku,
+                            'product_name' => $item->variant->product->name ?? 'Producto',
+                            'image' => $item->variant->image,
+                        ] : null,
+                        'pack' => $item->pack ? [
+                            'id' => $item->pack->id,
+                            'name' => $item->pack->name,
+                        ] : null,
+                    ];
+                })->all(),
+                'services' => $order->services->map(function ($service) {
+                    return [
+                        'id' => $service->id,
+                        'service_name' => $service->service->name ?? 'Servicio',
+                        'price' => $service->price,
+                    ];
+                })->all(),
+                'created_at' => $order->created_at,
+            ];
+        }));
+    }
+
+    // ─── LISTADO ADMIN (Kanban) ──────────────────────────────────────────────
+
+    public function index(): JsonResponse
     {
         try {
             $orders = Order::with(['user', 'items.variant', 'items.pack', 'payment'])->get();
@@ -35,7 +96,14 @@ class OrderController extends Controller
     public function show($id)
     {
         try {
-            $order = Order::with(['user', 'items.variant', 'items.pack', 'payment'])->findOrFail($id);
+            $order = Order::with([
+                'user',
+                'items.variant.product',
+                'items.pack',
+                'services.service',
+                'payment',
+            ])->findOrFail($id);
+
             return response()->json($this->formatOrder($order));
         } catch (\Throwable $e) {
             return response()->json(['error' => 'Pedido no encontrado', 'debug' => $e->getMessage()], 404);
@@ -114,17 +182,17 @@ class OrderController extends Controller
                 'status' => 'required|in:nuevo,en_preparacion,empaquetando,listo_envio,enviado,completado,cancelado',
             ]);
 
-            $order->update(['status' => $validated['status']]);
+            $order->update(['status' => $validated['status'],]);
 
             return response()->json([
                 'message' => 'Pedido actualizado correctamente',
                 'order'   => $this->formatOrder(
-                    $order->fresh()->load(['user', 'items.variant', 'items.pack', 'payment'])
+                    $order->fresh()->load(['user', 'items.variant.product', 'items.pack', 'services.service.variant.product', 'items.pack', 'payment'])
                 ),
             ]);
 
         } catch (\Throwable $e) {
-            return response()->json(['error' => 'Error actualizando pedido', 'debug' => $e->getMessage()], 500);
+            return response()->json(['error' => 'Error actualizando pedido', 'debug' => $e->getMessage(),], 500);
         }
     }
 
@@ -135,11 +203,19 @@ class OrderController extends Controller
     {
         try {
             Order::findOrFail($id)->delete();
-            return response()->json(['message' => 'Pedido eliminado correctamente']);
+            return response()->json(['message' => 'Pedido eliminado correctamente',]);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return response()->json(['error' => 'Pedido no encontrado'], 404);
+
         } catch (\Throwable $e) {
-            return response()->json(['error' => 'Error eliminando pedido', 'debug' => $e->getMessage()], 500);
+            return response()->json(['error' => 'Error eliminando pedido', 'debug' => $e->getMessage(),], 500);
         }
     }
+
+    // ─── PRIVADOS ────────────────────────────────────────────────────────────
+
+    // ─── PRIVADOS ────────────────────────────────────────────────────────────
 
     /**
      * TIMELINE SINTÉTICO
@@ -191,13 +267,12 @@ class OrderController extends Controller
             'updated_at'     => $order->updated_at,
 
             'user' => $order->user ? [
-                'id'    => $order->user->id,
-                'name'  => $order->user->name,
+                'id' => $order->user->id,
+                'name' => $order->user->name,
                 'email' => $order->user->email,
             ] : null,
-
             'payment' => $order->payment ? [
-                'provider'       => $order->payment->provider ?? null,
+                'provider' => $order->payment->provider ?? null,
                 'payment_status' => $order->payment->payment_status ?? null,
                 'transaction_id' => $order->payment->transaction_id ?? null,
             ] : null,
@@ -224,5 +299,22 @@ class OrderController extends Controller
                 })->values()->toArray()
                 : [],
         ];
+    }
+
+    /**
+     * Respuesta de error 500 estandarizada.
+     * En producción no expone debug; en local sí.
+     */
+    private function serverError(\Throwable $e): JsonResponse
+    {
+        $body = ['error' => 'Error interno del servidor'];
+
+        if (config('app.debug')) {
+            $body['debug']   = $e->getMessage();
+            $body['file']    = $e->getFile();
+            $body['line']    = $e->getLine();
+        }
+
+        return response()->json($body, 500);
     }
 }

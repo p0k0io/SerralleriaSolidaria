@@ -23,43 +23,57 @@ export default function FeaturedCard({ variant, cart, setCart, onViewDetail }) {
     })
   }
 
+  const imageUrl = variant.image || product?.image || null
+  const isFeatured = variant.featured ?? variant.destacado
+
   return (
-    <div className="w-72 shrink-0 bg-white rounded-2xl border border-amber-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col overflow-hidden group">
-      {/* Imagen */}
+    <div className="w-72 shrink-0 bg-white rounded-3xl border border-amber-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex flex-col overflow-hidden group">
       <div
-        className="relative bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center text-orange-300 cursor-pointer h-60"
+        className="relative h-64 overflow-hidden cursor-pointer bg-slate-100"
         onClick={() => onViewDetail(productName, [variant])}
       >
-        <ProductIcon name={productName} size={44} />
-        <div className="absolute top-2 left-2 flex flex-col gap-1">
-          <span className="flex items-center gap-1 bg-amber-400 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-            Destacado
-          </span>
-          {variant.stock_status && variant.stock_status !== "available" && (
-            <StockBadge status={variant.stock_status} tiny />
-          )}
-        </div>
-        <div className="absolute inset-0 bg-orange-500/0 group-hover:bg-orange-500/10 transition-colors duration-200 flex items-center justify-center">
-          <div className="opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-1 group-hover:translate-y-0">
-            <span className="flex items-center gap-1.5 bg-white text-orange-500 text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
-              <EyeIcon /> Ver detalle
+        {imageUrl ? (
+          <img src={imageUrl} alt={productName} className="absolute inset-0 w-full h-full object-cover" />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <ProductIcon name={productName} size={56} />
+          </div>
+        )}
+
+        <div className="absolute inset-0 bg-slate-950/10 group-hover:bg-slate-950/20 transition-colors duration-200" />
+
+        {isFeatured && (
+          <div className="absolute top-3 left-3">
+            <span className="inline-flex items-center bg-orange-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg">
+              Destacado
             </span>
           </div>
+        )}
+
+        {variant.stock_status && variant.stock_status !== "available" && (
+          <div className="absolute top-3 right-3">
+            <StockBadge status={variant.stock_status} tiny />
+          </div>
+        )}
+
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200">
+          <span className="flex items-center gap-1.5 bg-white/95 text-orange-500 text-xs font-bold px-3 py-1.5 rounded-full shadow-md backdrop-blur-sm">
+            <EyeIcon /> Ver detalle
+          </span>
         </div>
+
         {cartItem && (
-          <div className="absolute bottom-2 left-0 right-0 flex flex-wrap gap-1 justify-center px-2">
-            <span className="text-[10px] bg-orange-500 text-white font-bold px-1.5 py-0.5 rounded-md font-mono">
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex flex-wrap gap-1 justify-center px-2">
+            <span className="text-[10px] bg-orange-500 text-white font-bold px-2 py-1 rounded-full font-mono shadow-sm">
               {(variant.sku ?? "").split("-").slice(-1)[0]} ×{cartItem.qty}
             </span>
           </div>
         )}
       </div>
-
-      {/* Body */}
       <div className="flex flex-col flex-1 p-3 gap-2.5">
         <div className="flex items-start justify-between gap-2">
           <h3
-            className="font-bold text-slate-800 leading-snug cursor-pointer hover:text-orange-500 transition-colors text-sm"
+            className="font-bold text-slate-900 leading-snug cursor-pointer hover:text-orange-500 transition-colors text-base"
             onClick={() => onViewDetail(productName, [variant])}
           >
             {productName}
@@ -77,8 +91,6 @@ export default function FeaturedCard({ variant, cart, setCart, onViewDetail }) {
         </div>
 
         <div className="flex-1" />
-
-        {/* Add to cart */}
         <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
           <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden shrink-0">
             <button onClick={(e) => { e.stopPropagation(); setQty((q) => Math.max(1, q - 1)) }} className="w-7 h-8 flex items-center justify-center text-slate-400 hover:bg-orange-50 hover:text-orange-500 transition-colors text-lg">−</button>

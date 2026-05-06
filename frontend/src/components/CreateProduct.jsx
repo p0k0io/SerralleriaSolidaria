@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { useAdminToast } from "../context/AdminToastContext";
 
 // ── ICONOS ────────────────────────────────────────────────────────────────────
 const PlusIcon = () => (
@@ -69,10 +70,10 @@ function Card({ titulo, children }) {
   );
 }
 
-export default function CreateProduct() {
+export default function CreateProduct({ onCreated }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
-    name: "", description: "", manufacturer: "", categoryId: "", active: true,
+    name: "", description: "", manufacturer: "", categoryId: "", active: true, 
     variants: [{ sku: "", price: "", active: true, image: null, attributes: {} }],
   });
   const [categories, setCategories] = useState([]);
@@ -80,13 +81,14 @@ export default function CreateProduct() {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
   const timer = useRef(null);
+  const { showToast } = useAdminToast();
 
   useEffect(() => {
     fetch("http://localhost:8000/api/categories").then(r => r.json()).then(data => setCategories(data.categories));
     fetch("http://localhost:8000/api/attributes").then(r => r.json()).then(setAttributes);
   }, []);
 
-  const showToast = (ok, msg) => {
+  const showLocalToast = (ok, msg) => {
     clearTimeout(timer.current);
     setToast({ ok, msg });
     timer.current = setTimeout(() => setToast(null), 3200);
@@ -125,9 +127,14 @@ export default function CreateProduct() {
       });
       const res = await fetch("http://localhost:8000/api/products/products-with-variants", { method: "POST", body: fd });
       if (!res.ok) throw new Error("No se pudo crear el producto");
-      showToast(true, "Producto creado correctamente");
+      showToast("Producto creado correctamente");
+      showLocalToast(true, "Producto creado correctamente");
       setForm({ name: "", description: "", manufacturer: "", categoryId: "", active: true, variants: [{ sku: "", price: "", active: true, image: null, attributes: {} }] });
-    } catch (err) { showToast(false, err.message); }
+      if (onCreated) onCreated();
+    } catch (err) {
+      showToast(err.message, "error");
+      showLocalToast(false, err.message);
+    }
     setLoading(false);
   };
 

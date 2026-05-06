@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useAdminToast } from "../../context/AdminToastContext";
 
 // ── ICONOS ────────────────────────────────────────────────────────────────────
 const PlusIcon = () => (
@@ -60,13 +61,14 @@ function Spinner() {
 }
 
 // ── MAIN ──────────────────────────────────────────────────────────────────────
-export default function CreateCategory() {
+export default function CreateCategory({ onCreated }) {
   const [open, setOpen] = useState(false);
   const [categories, setCategories] = useState([]);
   const [form, setForm] = useState({ name: "", description: "", parent_id: "" });
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingCats, setLoadingCats] = useState(false);
+  const { showToast } = useAdminToast();
 
   const handleChange = (field, value) => setForm({ ...form, [field]: value });
 
@@ -121,6 +123,8 @@ export default function CreateCategory() {
       setMessage(`success:${data.category.name}`);
       resetForm();
       await fetchCategories();
+      showToast(`Categoría ${data.category.name} creada correctamente`);
+      if (onCreated) onCreated();
 
       setTimeout(() => {
         setOpen(false);
@@ -128,6 +132,7 @@ export default function CreateCategory() {
       }, 1400);
     } catch (err) {
       setMessage(`error:${err.message}`);
+      showToast(err.message, "error");
     } finally {
       setLoading(false);
     }
