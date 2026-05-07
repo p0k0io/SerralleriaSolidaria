@@ -28,7 +28,7 @@ use App\Http\Controllers\SqlController;
 
 Route::get('/test', function () {
     return response()->json([
-        'status' => 'ok',
+        'status'  => 'ok',
         'message' => 'API funcionando correctamente',
     ]);
 });
@@ -132,26 +132,20 @@ Route::prefix('attributes')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| ORDERS
+| ORDERS — rutas públicas
+| IMPORTANTE: las rutas con segmento estático (/prepared, /track, /my)
+| deben ir ANTES de las rutas con parámetros dinámicos (/{id})
+| para que Laravel no las interprete como un {id}.
 |--------------------------------------------------------------------------
 */
 
 Route::prefix('orders')->group(function () {
+
+    // Fulfillment — pedidos listos para envío (público o proteger con role:admin si prefieres)
     Route::get('/prepared', [OrderController::class, 'getPreparedOrders']);
-    Route::get('/{id}', [OrderController::class, 'show']);
-});
 
-
-Route::middleware('auth:sanctum')->group(function () {
-
-    Route::get('/orders/{order}/items', [OrderItemController::class, 'index']);
-    Route::get('/orders/{order}/items/{item}', [OrderItemController::class, 'show']);
-    Route::delete('/orders/{order}/items/{item}', [OrderItemController::class, 'destroy']);
-
-    // Rutas de status (normalmente protegidas también por rol admin)
-    Route::patch('/orders/{order}/items/{item}/status', [OrderItemController::class, 'updateStatus']);
-    Route::patch('/orders/{order}/items/status/bulk', [OrderItemController::class, 'bulkUpdateStatus']);
-
+    // Tracking público — el cliente busca por código TRK-XXXXXXXX (sin auth)
+    Route::get('/track/{tracking}', [OrderController::class, 'track']);
 });
 
 /*
@@ -193,14 +187,6 @@ Route::post('/stripe/webhook', [PaymentController::class, 'webhook']);
 
 /*
 |--------------------------------------------------------------------------
-| SEGUIMIENTO DE PEDIDO (público — el cliente busca por TRK-XXXXXXXX)
-|--------------------------------------------------------------------------
-*/
-
-Route::get('/orders/track/{tracking}', [OrderController::class, 'track']);
-
-/*
-|--------------------------------------------------------------------------
 | PROTECTED ROUTES (SANCTUM)
 |--------------------------------------------------------------------------
 */
@@ -214,16 +200,29 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/checkout', [PaymentController::class, 'checkout']);
 
+    // ── Order items ───────────────────────────────────────────────────────────
+    Route::get('/orders/{order}/items', [OrderItemsController::class, 'index']);
+    Route::get('/orders/{order}/items/{item}', [OrderItemsController::class, 'show']);
+    Route::delete('/orders/{order}/items/{item}', [OrderItemsController::class, 'destroy']);
+    Route::patch('/orders/{order}/items/{item}/status', [OrderItemsController::class, 'updateStatus']);
+    Route::patch('/orders/{order}/items/status/bulk', [OrderItemsController::class, 'bulkUpdateStatus']);
 
-    /*
-    |--------------------------------------------------------------------------
-    | ADMIN — ORDERS
-    |--------------------------------------------------------------------------
-    */
+    // ── MIS PEDIDOS (cliente autenticado) ─────────────────────────────────────
+    // Lista resumida de pedidos propios — consume MyOrders.jsx
+    Route::get('/orders/my', [OrderController::class, 'myOrders']);
+
+    // Detalle de un pedido propio con scope user_id — consume el modal de MyOrders.jsx
+    // IMPORTANTE: esta ruta debe ir antes de /orders/{id} para que Laravel
+    // no interprete "my" como un {id} numérico (en este caso no hay conflicto
+    // porque "my" no es numérico, pero se documenta por claridad).
+    Route::get('/orders/my/{id}', [OrderController::class, 'myOrderDetail']);
+
+    // ── ADMIN ─────────────────────────────────────────────────────────────────
     Route::prefix('admin')->group(function () {
         Route::get('/orders', [OrderController::class, 'index']);
         Route::get('/orders/{id}', [OrderController::class, 'show']);
         Route::put('/orders/{id}', [OrderController::class, 'update']);
         Route::delete('/orders/{id}', [OrderController::class, 'destroy']);
     });
+
 });

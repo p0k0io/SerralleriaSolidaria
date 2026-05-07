@@ -1,4 +1,8 @@
 import { useState, useEffect, useRef } from "react"
+import { useParams, useNavigate, useSearchParams } from "react-router-dom"
+
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000"
 
 const STEPS = [
   {
@@ -39,18 +43,22 @@ const euro    = (v) => new Intl.NumberFormat("es-ES", { style: "currency", curre
 const dtFull  = (d) => new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })
 const dtShort = (d) => new Date(d).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
 
-/* ─── API: busca por order_tracking ─────────────────── */
 async function fetchOrder(tracking) {
-  const res = await fetch(`http://localhost:8000/api/orders/track/${tracking}`)
+  const res = await fetch(`${API_BASE}/api/orders/track/${tracking}`)
   if (res.status === 404) return null
   if (!res.ok) throw new Error("Server error")
   return res.json()
 }
 
-const _style = document.createElement("style")
-_style.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`
-document.head.appendChild(_style)
+// ─── INJECT KEYFRAMES ONCE ────────────────────────────────────────────────────
+if (!document.getElementById("ot-style")) {
+  const s = document.createElement("style")
+  s.id = "ot-style"
+  s.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`
+  document.head.appendChild(s)
+}
 
+// ─── SEARCH BOX ───────────────────────────────────────────────────────────────
 function SearchBox({ onSearch, loading }) {
   const [val, setVal] = useState("")
   const ref = useRef(null)
@@ -98,6 +106,7 @@ function SearchBox({ onSearch, loading }) {
   )
 }
 
+// ─── STEPPER ─────────────────────────────────────────────────────────────────
 function Stepper({ status }) {
   const ci = IDX[status] ?? 0
   const done = status === "completado"
@@ -142,6 +151,7 @@ function Stepper({ status }) {
   )
 }
 
+// ─── TIMELINE ────────────────────────────────────────────────────────────────
 function Timeline({ events, status }) {
   const safeEvents = Array.isArray(events) ? events : []
   const nextStep = STEPS[Math.min((IDX[status] ?? 0) + 1, STEPS.length - 1)]
@@ -197,6 +207,7 @@ function Timeline({ events, status }) {
   )
 }
 
+// ─── IDLE SCREEN ─────────────────────────────────────────────────────────────
 function IdleScreen({ onSearch, loading }) {
   return (
     <div style={{ maxWidth: 680, margin: "0 auto" }}>
@@ -260,7 +271,9 @@ function IdleScreen({ onSearch, loading }) {
   )
 }
 
-function ResultScreen({ order, onReset }) {
+// ─── RESULT SCREEN ────────────────────────────────────────────────────────────
+function ResultScreen({ order, onReset, showBack }) {
+  const navigate = useNavigate()
   const ci       = IDX[order.status] ?? 0
   const done     = order.status === "completado"
   const step     = STEPS.find(s => s.key === order.status)
@@ -303,7 +316,9 @@ function ResultScreen({ order, onReset }) {
               <span style={{ fontSize: 11, color: "#cbd5e1" }}>·</span>
               <span style={{ fontSize: 12, color: "#94a3b8" }}>{dtFull(order.created_at)}</span>
             </div>
-            <button onClick={onReset} style={{
+
+            {/* Back button: vuelve a pedidos si vino desde allí, o busca nuevo */}
+            <button onClick={showBack ? () => navigate(-1) : onReset} style={{
               display: "flex", alignItems: "center", gap: 5,
               fontSize: 12, color: "#94a3b8", background: "none",
               border: "none", cursor: "pointer", padding: "4px 8px",
@@ -313,7 +328,7 @@ function ResultScreen({ order, onReset }) {
               onMouseLeave={e => e.currentTarget.style.color = "#94a3b8"}
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5m7-7-7 7 7 7"/></svg>
-              Otro pedido
+              {showBack ? "Mis pedidos" : "Otro pedido"}
             </button>
           </div>
 
@@ -447,6 +462,7 @@ function ResultScreen({ order, onReset }) {
   )
 }
 
+// ─── NOT FOUND ────────────────────────────────────────────────────────────────
 function NotFound({ id, onReset, onRetry }) {
   return (
     <div style={{ maxWidth: 480 }}>
@@ -496,17 +512,34 @@ function ErrorScreen({ id, onReset, onRetry }) {
   )
 }
 
+// ─── MAIN ─────────────────────────────────────────────────────────────────────
+/**
+ * OrderTracking puede usarse de dos formas:
+ *
+ * 1. Ruta pública:  /tracking          → el usuario escribe manualmente el código
+ * 2. Ruta directa: /tracking/:tracking → viene desde MyOrders, carga automáticamente
+ *
+ * En ambos casos el componente se comporta igual internamente.
+ */
 export default function OrderTracking() {
+  // Soporte para URL param (React Router v6)
+  const { tracking: paramTracking } = useParams()
+  const [searchParams] = useSearchParams()
+  const refTracking = searchParams.get("ref")
+
   const [phase, setPhase] = useState("idle")
   const [order, setOrder] = useState(null)
   const [qid, setQid]     = useState(null)
 
-  // Si viene con ?ref=TRK-XXXX en la URL (desde Success.jsx), busca automáticamente
+  // showBack = true cuando se llega desde MyOrders (hay param en URL)
+  const showBack = Boolean(paramTracking)
+
+  // Búsqueda automática si llega tracking en la URL (param o ?ref=)
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const ref = params.get("ref")
-    if (ref) search(ref)
-  }, [])
+    const code = paramTracking ?? refTracking
+    if (code) search(code)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paramTracking, refTracking])
 
   async function search(tracking) {
     setPhase("loading")
@@ -530,7 +563,7 @@ export default function OrderTracking() {
       </div>
 
       {(phase === "idle" || phase === "loading") && <IdleScreen onSearch={search} loading={phase === "loading"} />}
-      {phase === "found" && order && <ResultScreen order={order} onReset={reset} />}
+      {phase === "found" && order && <ResultScreen order={order} onReset={reset} showBack={showBack} />}
       {phase === "not_found" && <NotFound id={qid} onReset={reset} onRetry={search} />}
       {phase === "error" && <ErrorScreen id={qid} onReset={reset} onRetry={search} />}
     </div>
