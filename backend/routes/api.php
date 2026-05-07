@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\AttributeValueController;
 use App\Http\Controllers\Api\RequestController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\OrderItemsController;
+use App\Http\Controllers\CartController;
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PaymentController;
@@ -227,4 +228,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/orders/{id}', [OrderController::class, 'destroy']);
         
     });
+
+
+
+    Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('/cart', [CartController::class, 'index']);
+
+    Route::post('/cart', [CartController::class, 'store']);
+
+    Route::put('/cart/{id}', [CartController::class, 'update']);
+
+    Route::delete('/cart/{id}', [CartController::class, 'destroy']);
+
+    Route::delete('/cart-clear', [CartController::class, 'clear']);
+});
 });

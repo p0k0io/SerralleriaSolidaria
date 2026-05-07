@@ -1,26 +1,101 @@
 import { useState } from "react"
+import axios from "axios"
+
 import { persistCart } from "./cartUtils"
 import { ProductIcon, EyeIcon, CartIcon } from "./icons"
 import StockBadge from "./StockBadge"
 import MetaPills from "./MetaPills"
 
-export default function ProductCard({ name, variants, cart, setCart, compact, onViewDetail }) {
-  const [selected, setSelected] = useState(variants[0])
-  const [qty, setQty]           = useState(1)
-  const cartItem                = cart.find((c) => c.id === selected.id)
-  const product                 = selected.product
-  const isUnavailable           = selected.stock_status === "out_of_stock"
+export default function ProductCard({
+  name,
+  variants,
+  cart,
+  setCart,
+  compact,
+  onViewDetail,
+}) {
 
-  function handleAdd(e) {
+  const [selected, setSelected] = useState(variants[0])
+  const [qty, setQty] = useState(1)
+
+  const cartItem = cart.find((c) => c.id === selected.id)
+
+  const product = selected.product
+
+  const isUnavailable = selected.stock_status === "out_of_stock"
+
+  /*
+  |--------------------------------------------------------------------------
+  | Guardar carrito en backend
+  |--------------------------------------------------------------------------
+  */
+
+  async function saveCartToDatabase(item) {
+
+    try {
+
+      const token = localStorage.getItem("token")
+
+      if (!token) return
+
+      await axios.post(
+        `http://localhost:8000/api/cart`,
+        {
+          variant_id: item.id,
+          sku: item.sku,
+          product_name: item.product_name,
+          price: item.price,
+          qty: item.qty,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+    } catch (error) {
+
+      console.error("Error guardando carrito", error)
+    }
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Añadir al carrito
+  |--------------------------------------------------------------------------
+  */
+
+  async function handleAdd(e) {
+
     e.stopPropagation()
+
+    const item = {
+      id: selected.id,
+      sku: selected.sku,
+      product_name: name,
+      price: selected.price,
+      qty,
+    }
+
     setCart((prev) => {
+
       const existing = prev.find((c) => c.id === selected.id)
+
       const next = existing
-        ? prev.map((c) => c.id === selected.id ? { ...c, qty: c.qty + qty } : c)
-        : [...prev, { id: selected.id, sku: selected.sku, product_name: name, price: selected.price, qty }]
+        ? prev.map((c) =>
+            c.id === selected.id
+              ? { ...c, qty: c.qty + qty }
+              : c
+          )
+        : [...prev, item]
+
       persistCart(next)
+
       return next
     })
+
+    await saveCartToDatabase(item)
   }
 
   return (
