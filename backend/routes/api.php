@@ -189,7 +189,7 @@ Route::post('/login', [AuthController::class, 'login']);
 */
 
 Route::get('/stripe/session/{id}', [PaymentController::class, 'checkSession']);
-Route::post('/stripe/webhook', [PaymentController::class, 'webhook']);
+Route::post('/stripe/webhook', [PaymentController::class, 'stripeWebhook']);
 
 /*
 |--------------------------------------------------------------------------

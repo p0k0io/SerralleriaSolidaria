@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use Stripe\Stripe;
+use Stripe\Checkout\Session;
+use Stripe\Webhook;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Stripe\Stripe;
-use Stripe\Checkout\Session;
+
 use App\Models\Order;
-use App\Models\Payment;
 use App\Models\OrderItem;
+use App\Models\Payment;
 
 class PaymentController extends Controller
 {
@@ -18,18 +21,24 @@ class PaymentController extends Controller
     {
         Log::info("🟡 Checkout iniciado");
 
+        DB::beginTransaction();
+
         try {
             Stripe::setApiKey(config('services.stripe.secret'));
 
             $user = Auth::user();
-            Log::info("👤 Usuario recibido:", ['user' => $user]);
+
+            Log::info("👤 Usuario recibido:", [
+                'user_id' => $user?->id
+            ]);
 
             if (!$user) {
                 Log::warning("❌ Usuario NO autenticado");
-                return response()->json(['error' => 'No autenticado'], 401);
-            }
 
-            Log::info("📦 Request data:", $request->all());
+                return response()->json([
+                    'error' => 'No autenticado'
+                ], 401);
+            }
 
             $validated = $request->validate([
                 'items'       => 'required|array|min:1',
@@ -44,117 +53,175 @@ class PaymentController extends Controller
 
             Log::info("✅ Validación OK");
 
-            $cart       = $request->items;
+            $cart       = $validated['items'];
             $line_items = [];
             $total      = 0;
 
             foreach ($cart as $item) {
-                Log::info("🛒 Item:", $item);
 
                 if (!isset($item['price'], $item['qty'])) {
                     throw new \Exception("Item inválido");
                 }
 
-                $amount = intval($item['price'] * 100);
+                $amount   = intval($item['price'] * 100);
+                $subtotal = $item['price'] * $item['qty'];
 
                 $line_items[] = [
                     'price_data' => [
-                        'currency'     => 'eur',
-                        'product_data' => ['name' => $item['product_name'] ?? 'Producto'],
-                        'unit_amount'  => $amount,
+                        'currency' => 'eur',
+                        'product_data' => [
+                            'name' => $item['product_name'] ?? 'Producto',
+                        ],
+                        'unit_amount' => $amount,
                     ],
                     'quantity' => $item['qty'],
                 ];
 
-
-
-                $total += ($item['price'] * $item['qty']);
+                $total += $subtotal;
             }
 
-            Log::info("💰 Total calculado: " . $total);
+            Log::info("💰 Total calculado", [
+                'total' => $total
+            ]);
 
-            DB::beginTransaction();
+            /*
+            |--------------------------------------------------------------------------
+            | Generar tracking único
+            |--------------------------------------------------------------------------
+            */
 
-            // Generar número de seguimiento único: TRK-XXXXXXXX
             do {
                 $tracking = 'TRK-' . strtoupper(substr(md5(uniqid(rand(), true)), 0, 8));
             } while (Order::where('order_tracking', $tracking)->exists());
 
-            Log::info("🔖 Tracking generado: " . $tracking);
+            /*
+            |--------------------------------------------------------------------------
+            | Crear Order
+            |--------------------------------------------------------------------------
+            */
 
             $order = Order::create([
                 'user_id'        => $user->id,
-                'status'         => 'nuevo',
+                'status'         => 'pending_payment',
                 'order_tracking' => $tracking,
-                'full_name'      => $request->full_name,
-                'email'          => $request->email,
-                'phone'          => $request->phone,
-                'address'        => $request->address,
-                'postal_code'    => $request->postal_code,
-                'city'           => $request->city,
-                'country'        => $request->country,
+                'full_name'      => $validated['full_name'],
+                'email'          => $validated['email'],
+                'phone'          => $validated['phone'],
+                'address'        => $validated['address'],
+                'postal_code'    => $validated['postal_code'],
+                'city'           => $validated['city'],
+                'country'        => $validated['country'],
                 'total_amount'   => $total,
             ]);
 
-            
+            Log::info("🧾 Order creada", [
+                'order_id' => $order->id,
+                'tracking' => $tracking
+            ]);
 
-            Log::info("🧾 Order creada:", ['order_id' => $order->id, 'tracking' => $tracking]);
-            Log::info("🌍 FRONT URL:", ['front_url' => config('app.front_url')]);
+            /*
+            |--------------------------------------------------------------------------
+            | Crear Order Items en estado pendiente
+            |--------------------------------------------------------------------------
+            */
+
+            $orderItems = collect($cart)->map(function ($item) use ($order) {
+
+                return [
+                    'order_id'     => $order->id,
+                    'variant_id'   => $item['id'] ?? null,
+                    'product_name' => $item['product_name'] ?? 'Producto',
+                    'quantity'     => $item['qty'],
+                    'unit_price'   => $item['price'],
+                    'status'       => 'pending',
+                    'created_at'   => now(),
+                    'updated_at'   => now(),
+                ];
+            })->toArray();
+
+            OrderItem::insert($orderItems);
+
+            Log::info("📦 OrderItems creados");
+
+            /*
+            |--------------------------------------------------------------------------
+            | Crear sesión Stripe
+            |--------------------------------------------------------------------------
+            */
 
             $session = Session::create([
                 'payment_method_types' => ['card'],
                 'line_items'           => $line_items,
                 'mode'                 => 'payment',
+
                 'client_reference_id'  => $user->id,
-                'metadata'             => [
+
+                'metadata' => [
                     'user_id'        => $user->id,
                     'order_id'       => $order->id,
                     'order_tracking' => $tracking,
                 ],
-                'success_url' => config('app.front_url') . '/success?session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url'  => config('app.front_url') . '/carrito',
+
+                'success_url' => config('app.front_url')
+                    . '/success?session_id={CHECKOUT_SESSION_ID}',
+
+                'cancel_url'  => config('app.front_url')
+                    . '/payment-cancelled?order_id=' . $order->id,
             ]);
 
-            Log::info("💳 Stripe session creada:", ['session_id' => $session->id]);
+            Log::info("💳 Stripe session creada", [
+                'session_id' => $session->id
+            ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | Crear Payment en pending
+            |--------------------------------------------------------------------------
+            */
 
             Payment::create([
                 'order_id'       => $order->id,
                 'provider'       => 'stripe',
-                'payment_status' => 'paid',
+                'payment_status' => 'pending',
                 'transaction_id' => $session->id,
             ]);
 
-            OrderItem::insert(
-                collect($cart)->map(function ($item) use ($order) {
-                    return [
-                        'order_id' => $order->id,
-                        'variant_id' => $item['id'] ?? null,  // ← el frontend envía 'id', no 'variant_id'
-                        'product_name' => $item['product_name'] ?? 'Producto',
-                        'quantity' => $item['qty'],
-                        'unit_price' => $item['price'] * $item['qty'],
-                        'status' => 'pendiente',
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
-                })->toArray()
-            );
-
-
-            Log::info("💾 Payment guardado");
-
             DB::commit();
-            Log::info("🟢 Checkout OK");
 
-            return response()->json(['url' => $session->url]);
+            Log::info("🟢 Checkout creado correctamente");
+
+            return response()->json([
+                'url'        => $session->url,
+                'order_id'   => $order->id,
+                'tracking'   => $tracking,
+                'session_id' => $session->id,
+            ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error("❌ Error de validación", $e->errors());
-            return response()->json(['error' => 'Validación fallida', 'details' => $e->errors()], 422);
+
+            DB::rollBack();
+
+            Log::error("❌ Error de validación", [
+                'errors' => $e->errors()
+            ]);
+
+            return response()->json([
+                'error'   => 'Validación fallida',
+                'details' => $e->errors()
+            ], 422);
 
         } catch (\Exception $e) {
+
             DB::rollBack();
-            Log::error("💥 ERROR GENERAL: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-            return response()->json(['error' => 'Error al crear el checkout', 'message' => $e->getMessage()], 500);
+
+            Log::error("💥 ERROR GENERAL: " . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error'   => 'Error al crear el checkout',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -171,37 +238,106 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function webhook(Request $request)
-    {
-        $payload   = $request->getContent();
-        $sigHeader = $request->header('Stripe-Signature');
-        $secret    = env('STRIPE_WEBHOOK_SECRET');
+    public function stripeWebhook(Request $request)
+{
+    Stripe::setApiKey(config('services.stripe.secret'));
 
-        \Log::info('📩 Webhook recibido');
+    $payload = $request->getContent();
+    $sigHeader = $request->server('HTTP_STRIPE_SIGNATURE');
 
-        if (!$sigHeader) {
-            \Log::error('❌ No Stripe-Signature header');
-            return response()->json(['error' => 'no signature'], 400);
+    try {
+
+        $event = \Stripe\Webhook::constructEvent(
+            $payload,
+            $sigHeader,
+            config('services.stripe.webhook_secret')
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pago completado
+        |--------------------------------------------------------------------------
+        */
+
+        if ($event->type === 'checkout.session.completed') {
+
+            $session = $event->data->object;
+
+            $orderId = $session->metadata->order_id;
+
+            $order = Order::find($orderId);
+
+            if ($order) {
+
+                $order->update([
+                    'status' => 'completed'
+                ]);
+
+                Payment::where('order_id', $order->id)
+                    ->update([
+                        'payment_status' => 'paid'
+                    ]);
+
+                OrderItem::where('order_id', $order->id)
+                    ->update([
+                        'status' => 'completed'
+                    ]);
+
+                Log::info("✅ Pedido completado", [
+                    'order_id' => $order->id
+                ]);
+            }
         }
 
-        try {
-            $event = \Stripe\Webhook::constructEvent($payload, $sigHeader, $secret);
-        } catch (\Exception $e) {
-            \Log::error('❌ Webhook inválido', ['message' => $e->getMessage()]);
-            return response()->json(['error' => 'invalid signature'], 400);
+        /*
+        |--------------------------------------------------------------------------
+        | Pago expirado o cancelado
+        |--------------------------------------------------------------------------
+        */
+
+        if ($event->type === 'checkout.session.expired') {
+
+            $session = $event->data->object;
+
+            $orderId = $session->metadata->order_id;
+
+            $order = Order::find($orderId);
+
+            if ($order) {
+
+                $order->update([
+                    'status' => 'denied'
+                ]);
+
+                Payment::where('order_id', $order->id)
+                    ->update([
+                        'payment_status' => 'denied'
+                    ]);
+
+                OrderItem::where('order_id', $order->id)
+                    ->update([
+                        'status' => 'denied'
+                    ]);
+
+                Log::warning("❌ Pedido cancelado/expirado", [
+                    'order_id' => $order->id
+                ]);
+            }
         }
 
-        \Log::info('✅ Evento válido: ' . $event->type);
-
-    if ($event->type === 'checkout.session.completed') {
-        $session = $event->data->object;
-
-        \Log::info('💳 Pago completado', [
-            'session_id' => $session->id
+        return response()->json([
+            'received' => true
         ]);
-    }
-    
 
-        return response()->json(['ok' => true]);
+    } catch (\Exception $e) {
+
+        Log::error("❌ Webhook error", [
+            'message' => $e->getMessage()
+        ]);
+
+        return response()->json([
+            'error' => $e->getMessage()
+        ], 400);
     }
+}
 }
