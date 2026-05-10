@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useCallback } from "react"
 import { useAuth } from "../../context/AuthContext"
 
 const CART_KEY = "tienda_cart"
+
+// ─── Helpers localStorage ────────────────────────────────────────────────────
 
 function loadCart() {
   try {
@@ -11,10 +13,80 @@ function loadCart() {
   }
 }
 
-function persistCart(cart) {
+function persistLocal(cart) {
   localStorage.setItem(CART_KEY, JSON.stringify(cart))
   window.dispatchEvent(new Event("cart-updated"))
 }
+
+// ─── Helpers API ─────────────────────────────────────────────────────────────
+
+function authHeaders(token) {
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+}
+
+async function fetchBackendCart(token) {
+  const res = await fetch("http://localhost:8000/api/cart", {
+    headers: authHeaders(token),
+  })
+  if (!res.ok) throw new Error("Error al obtener el carrito")
+  const data = await res.json()
+  return data.map((item) => ({
+    cart_id: item.id,        // ← id autoincremental de la tabla cart (para DELETE/PUT)
+    id: item.variant_id,     // ← variant_id (identidad del producto)
+    sku: item.sku,
+    product_name: item.product_name,
+    price: item.price,
+    qty: item.qty,
+  }))
+}
+
+async function pushItemToBackend(token, item) {
+  const res = await fetch("http://localhost:8000/api/cart", {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({
+      variant_id: item.id,
+      sku: item.sku,
+      product_name: item.product_name,
+      price: item.price,
+      qty: item.qty,
+    }),
+  })
+  if (!res.ok) throw new Error("Error al guardar item en BBDD")
+  const data = await res.json()
+  // Devolvemos el cart_id que asigna la BBDD
+  return data?.id ?? data?.cart_id ?? null
+}
+
+async function updateItemInBackend(token, item) {
+  const res = await fetch(`http://localhost:8000/api/cart/${item.cart_id}`, {
+    method: "PUT",
+    headers: authHeaders(token),
+    body: JSON.stringify({ qty: item.qty }),
+  })
+  if (!res.ok) throw new Error("Error al actualizar item en BBDD")
+}
+
+async function deleteItemInBackend(token, cartId) {
+  const res = await fetch(`http://localhost:8000/api/cart/${cartId}`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  })
+  if (!res.ok) throw new Error("Error al eliminar item en BBDD")
+}
+
+async function clearBackendCart(token) {
+  const res = await fetch("http://localhost:8000/api/cart-clear", {
+    method: "DELETE",
+    headers: authHeaders(token),
+  })
+  if (!res.ok) throw new Error("Error al vaciar carrito en BBDD")
+}
+
+// ─── Icono de producto ────────────────────────────────────────────────────────
 
 function ProductIcon({ name = "", size = 28 }) {
   const n = name.toLowerCase()
@@ -61,6 +133,8 @@ function ProductIcon({ name = "", size = 28 }) {
     </svg>
   )
 }
+
+// ─── CartRow ──────────────────────────────────────────────────────────────────
 
 function CartRow({ item, onQty, onRemove }) {
   const price = Number(item.price) || 0
@@ -119,6 +193,8 @@ function CartRow({ item, onQty, onRemove }) {
   )
 }
 
+// ─── InputField ───────────────────────────────────────────────────────────────
+
 function InputField({ label, name, value, onChange, placeholder, type = "text", required = true, autoComplete }) {
   return (
     <label className="block">
@@ -137,8 +213,9 @@ function InputField({ label, name, value, onChange, placeholder, type = "text", 
   )
 }
 
+// ─── CartSummary ──────────────────────────────────────────────────────────────
+
 function CartSummary({ cart, onCheckout, loading, disabled, totalAmount }) {
-  const subtotal = totalAmount
   const totalQty = cart.reduce((s, i) => s + (Number(i.qty) || 0), 0)
 
   return (
@@ -148,7 +225,7 @@ function CartSummary({ cart, onCheckout, loading, disabled, totalAmount }) {
       <div className="flex flex-col gap-2.5 text-sm">
         <div className="flex justify-between text-slate-500">
           <span>Productos ({totalQty})</span>
-          <span>€{subtotal.toFixed(2)}</span>
+          <span>€{totalAmount.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-slate-500">
           <span>Envío</span>
@@ -157,7 +234,7 @@ function CartSummary({ cart, onCheckout, loading, disabled, totalAmount }) {
         <div className="border-t border-slate-100 my-1" />
         <div className="flex justify-between font-extrabold text-slate-800 text-base">
           <span>Total</span>
-          <span className="text-orange-500">€{subtotal.toFixed(2)}</span>
+          <span className="text-orange-500">€{totalAmount.toFixed(2)}</span>
         </div>
       </div>
 
@@ -196,6 +273,8 @@ function CartSummary({ cart, onCheckout, loading, disabled, totalAmount }) {
   )
 }
 
+// ─── CartEmpty ────────────────────────────────────────────────────────────────
+
 function CartEmpty() {
   return (
     <div className="text-center py-24 flex flex-col items-center gap-4">
@@ -215,6 +294,8 @@ function CartEmpty() {
   )
 }
 
+// ─── Constantes ───────────────────────────────────────────────────────────────
+
 const INITIAL_ADDRESS = {
   full_name: "",
   email: "",
@@ -225,21 +306,60 @@ const INITIAL_ADDRESS = {
   country: "España",
 }
 
+// ─── CartPage ─────────────────────────────────────────────────────────────────
+
 export default function CartPage() {
   const [cart, setCart] = useState(loadCart)
   const [address, setAddress] = useState(INITIAL_ADDRESS)
   const [stripeLoading, setStripeLoading] = useState(false)
   const [stripeError, setStripeError] = useState("")
+  const [syncing, setSyncing] = useState(false)
 
-  // ✅ Añadido authFetch al destructuring
-  const { user, authFetch } = useAuth()
+  const { user } = useAuth()
+  const token = localStorage.getItem("token")
 
+  // ── Sincronización inicial: cuando hay usuario logueado cargamos BBDD ──────
+  useEffect(() => {
+    if (!user || !token) return
+
+    setSyncing(true)
+
+    fetchBackendCart(token)
+      .then((backendCart) => {
+        // Fusionar: si hay items locales que no están en BBDD, los subimos
+        const localCart = loadCart()
+        const mergePromises = []
+
+        for (const localItem of localCart) {
+          const exists = backendCart.find((b) => b.id === localItem.id)
+          if (!exists) {
+            mergePromises.push(pushItemToBackend(token, localItem))
+          }
+        }
+
+        return Promise.allSettled(mergePromises).then(() =>
+          fetchBackendCart(token)
+        )
+      })
+      .then((finalCart) => {
+        persistLocal(finalCart)
+        setCart(finalCart)
+      })
+      .catch((err) => {
+        console.error("Error sincronizando carrito:", err)
+        // Si falla la BBDD, seguimos con localStorage
+      })
+      .finally(() => setSyncing(false))
+  }, [user, token])
+
+  // ── Escuchar cambios externos en el carrito (otras pestañas / componentes) ─
   useEffect(() => {
     const sync = () => setCart(loadCart())
     window.addEventListener("cart-updated", sync)
     return () => window.removeEventListener("cart-updated", sync)
   }, [])
 
+  // ── Rellenar datos del usuario ─────────────────────────────────────────────
   useEffect(() => {
     setAddress((prev) => ({
       ...prev,
@@ -248,28 +368,75 @@ export default function CartPage() {
     }))
   }, [user])
 
-  function updateQty(id, qty) {
-    if (qty < 1) return removeItem(id)
-    setCart((prev) => {
-      const next = prev.map((i) => (i.id === id ? { ...i, qty } : i))
-      persistCart(next)
-      return next
-    })
-  }
+  // ── Actualizar cantidad ────────────────────────────────────────────────────
+  const updateQty = useCallback(
+    async (id, qty) => {
+      if (qty < 1) return removeItem(id)
 
-  function removeItem(id) {
-    setCart((prev) => {
-      const next = prev.filter((i) => i.id !== id)
-      persistCart(next)
-      return next
-    })
-  }
+      // 1. Actualizar UI + localStorage inmediatamente
+      setCart((prev) => {
+        const next = prev.map((i) => (i.id === id ? { ...i, qty } : i))
+        persistLocal(next)
+        return next
+      })
 
-  function clearCart() {
+      // 2. Persistir en BBDD si hay sesión (necesitamos cart_id)
+      if (user && token) {
+        const item = loadCart().find((i) => i.id === id)
+        if (item?.cart_id) {
+          try {
+            await updateItemInBackend(token, { cart_id: item.cart_id, qty })
+          } catch (err) {
+            console.error("Error actualizando qty en BBDD:", err)
+          }
+        }
+      }
+    },
+    [user, token]
+  )
+
+  // ── Eliminar item ─────────────────────────────────────────────────────────
+  const removeItem = useCallback(
+    async (id) => {
+      // Capturamos cart_id ANTES de borrar del estado
+      const item = loadCart().find((i) => i.id === id)
+
+      // 1. Actualizar UI + localStorage inmediatamente
+      setCart((prev) => {
+        const next = prev.filter((i) => i.id !== id)
+        persistLocal(next)
+        return next
+      })
+
+      // 2. Eliminar en BBDD usando cart_id
+      if (user && token && item?.cart_id) {
+        try {
+          await deleteItemInBackend(token, item.cart_id)
+        } catch (err) {
+          console.error("Error eliminando item en BBDD:", err)
+        }
+      }
+    },
+    [user, token]
+  )
+
+  // ── Vaciar carrito ────────────────────────────────────────────────────────
+  const clearCart = useCallback(async () => {
+    // 1. Limpiar UI + localStorage inmediatamente
     setCart([])
-    persistCart([])
-  }
+    persistLocal([])
 
+    // 2. Limpiar BBDD si hay sesión
+    if (user && token) {
+      try {
+        await clearBackendCart(token)
+      } catch (err) {
+        console.error("Error vaciando carrito en BBDD:", err)
+      }
+    }
+  }, [user, token])
+
+  // ── Total ─────────────────────────────────────────────────────────────────
   const totalAmount = useMemo(
     () => cart.reduce((s, i) => s + (Number(i.price) || 0) * (Number(i.qty) || 0), 0),
     [cart]
@@ -284,17 +451,16 @@ export default function CartPage() {
     address.city.trim() &&
     address.country.trim()
 
+  // ── Checkout Stripe ───────────────────────────────────────────────────────
   async function handleStripeCheckout() {
     if (!user) {
       setStripeError("Debes iniciar sesión para continuar.")
       return
     }
-
     if (!cart.length) {
       setStripeError("Tu carrito está vacío.")
       return
     }
-
     if (!isAddressComplete) {
       setStripeError("Completa los datos de dirección antes de pagar.")
       return
@@ -303,33 +469,18 @@ export default function CartPage() {
     setStripeLoading(true)
     setStripeError("")
 
-    console.log("📤 Enviando:", {
-  items: cart,
-  ...address
-})
-
     try {
-    const token = localStorage.getItem("token")
-
-const res = await fetch("http://localhost:8000/api/checkout", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "Authorization": `Bearer ${token}`
-  },
-  body: JSON.stringify({
-    items: cart,
-    ...address
-  })
-})
-      
+      const res = await fetch("http://localhost:8000/api/checkout", {
+        method: "POST",
+        headers: authHeaders(token),
+        body: JSON.stringify({ items: cart, ...address }),
+      })
 
       const data = await res.json()
 
       if (!res.ok) {
         throw new Error(data?.error || data?.message || "No se pudo crear el checkout")
       }
-
       if (!data?.url) {
         throw new Error("La respuesta del servidor no incluye la URL de Stripe")
       }
@@ -345,12 +496,25 @@ const res = await fetch("http://localhost:8000/api/checkout", {
 
   const totalQty = cart.reduce((s, i) => s + (Number(i.qty) || 0), 0)
 
+  // ─────────────────────────────────────────────────────────────────────────
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Tu carrito</h1>
-          <p className="text-slate-400 text-sm mt-0.5">{totalQty} artículo{totalQty !== 1 ? "s" : ""}</p>
+          <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
+            Tu carrito
+            {syncing && (
+              <span className="ml-2 inline-flex items-center gap-1 text-xs font-medium text-slate-400">
+                <svg className="animate-spin" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M21 12a9 9 0 11-6.219-8.56" />
+                </svg>
+                Sincronizando…
+              </span>
+            )}
+          </h1>
+          <p className="text-slate-400 text-sm mt-0.5">
+            {totalQty} artículo{totalQty !== 1 ? "s" : ""}
+          </p>
         </div>
 
         {cart.length > 0 && (
@@ -384,6 +548,7 @@ const res = await fetch("http://localhost:8000/api/checkout", {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 flex flex-col gap-6">
+            {/* Datos de envío */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
               <h2 className="font-extrabold text-slate-800 text-lg mb-4">Datos de envío</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -449,6 +614,7 @@ const res = await fetch("http://localhost:8000/api/checkout", {
               </div>
             </div>
 
+            {/* Items del carrito */}
             <div className="flex flex-col gap-3">
               {cart.map((item) => (
                 <CartRow key={item.id} item={item} onQty={updateQty} onRemove={removeItem} />
