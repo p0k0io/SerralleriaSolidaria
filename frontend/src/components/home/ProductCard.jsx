@@ -9,6 +9,7 @@ export default function ProductCard({ name, variants, cart, setCart, compact, on
   const [qty, setQty]           = useState(1)
   const cartItem                = cart.find((c) => c.id === selected.id)
   const product                 = selected.product
+  const isPack                  = Boolean(selected.pack)
   const isUnavailable           = selected.stock_status === "out_of_stock"
 
   function handleAdd(e) {
@@ -73,7 +74,19 @@ export default function ProductCard({ name, variants, cart, setCart, compact, on
           </button>
         </div>
 
-        {!compact && <MetaPills product={product} />}
+        {!compact && !isPack && <MetaPills product={product} />}
+
+        {isPack && !compact && selected.pack_description && (
+          <div className="rounded-2xl bg-slate-50 border border-slate-100 p-3 text-sm text-slate-500">
+            {selected.pack_description}
+          </div>
+        )}
+
+        {isPack && (
+          <div className="inline-flex items-center gap-2 text-xs text-orange-600 font-semibold uppercase tracking-[0.16em] mb-1">
+            <span className="rounded-full bg-orange-100 px-2 py-1">Pack</span>
+          </div>
+        )}
 
         {/* Variantes */}
         <div>

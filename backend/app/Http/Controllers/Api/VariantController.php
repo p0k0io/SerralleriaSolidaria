@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Variant;
+use App\Models\Pack;
 
 class VariantController extends Controller
 {
@@ -27,6 +28,54 @@ class VariantController extends Controller
             'product'      => $variant->product ?? null,
             'created_at'   => $variant->created_at,
             'updated_at'   => $variant->updated_at,
+        ];
+    }
+
+    private function formatPackAsVariant(Pack $pack): array
+    {
+        $totalPrice = $pack->items->reduce(function ($sum, $item) {
+            return $sum + ((float) ($item->variant->price ?? 0) * (int) $item->quantity);
+        }, 0);
+
+        $outOfStock = $pack->items->contains(function ($item) {
+            return ($item->variant->stock_status ?? '') === 'out_of_stock';
+        });
+
+        return [
+            'id'              => "pack-{$pack->id}",
+            'product_id'      => null,
+            'sku'             => "PACK-{$pack->id}",
+            'price'           => $totalPrice,
+            'active'          => $pack->active,
+            'featured'        => false,
+            'image'           => null,
+            'stock_status'    => $outOfStock ? 'out_of_stock' : 'available',
+            'display'         => $pack->name . ' — Pack',
+            'product'         => [
+                'name'     => $pack->name,
+                'category' => ['name' => 'Packs'],
+            ],
+            'created_at'      => $pack->created_at,
+            'updated_at'      => $pack->updated_at,
+            'pack'            => true,
+            'pack_description'=> $pack->description,
+            'pack_items'      => $pack->items->map(function ($item) {
+                return [
+                    'variant_id' => $item->variant_id,
+                    'quantity'   => $item->quantity,
+                    'variant'    => $item->variant ? [
+                        'id'           => $item->variant->id,
+                        'sku'          => $item->variant->sku,
+                        'price'        => $item->variant->price,
+                        'product'      => $item->variant->product ? [
+                            'id'   => $item->variant->product->id,
+                            'name' => $item->variant->product->name,
+                        ] : null,
+                        'stock_status' => $item->variant->stock_status,
+                    ] : null,
+                ];
+            })->toArray(),
+            'attributes'      => [],
         ];
     }
 
@@ -207,6 +256,30 @@ class VariantController extends Controller
             $query->where('destacado', (bool) $request->featured);
         }
 
+        $packs = collect();
+        if (!($request->has('featured') && $request->featured !== '' && (bool) $request->featured)) {
+            $packQuery = Pack::with(['items.variant.product'])
+                ->where('active', true);
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $packQuery->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%");
+                });
+            }
+
+            if ($request->filled('stock_status')) {
+                if ($request->stock_status === 'available') {
+                    $packQuery->whereDoesntHave('items.variant', fn($q) => $q->where('stock_status', 'out_of_stock'));
+                } elseif ($request->stock_status === 'out_of_stock') {
+                    $packQuery->whereHas('items.variant', fn($q) => $q->where('stock_status', 'out_of_stock'));
+                }
+            }
+
+            $packs = $packQuery->get()->map(fn($pack) => $this->formatPackAsVariant($pack));
+        }
+
         $variants = $query->get()->map(function ($variant) {
             $base = $this->formatVariant($variant);
 
@@ -222,6 +295,10 @@ class VariantController extends Controller
 
             return $base;
         });
+
+        if ($packs->isNotEmpty()) {
+            $variants = $variants->concat($packs);
+        }
 
         return response()->json($variants);
     }

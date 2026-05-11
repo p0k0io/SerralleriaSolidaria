@@ -3,11 +3,44 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\Product;
+use App\Models\Variant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    public function index()
+    {
+        // Ventas totales del día
+        $todaySales = Order::where('status', 'completed')
+            ->whereDate('created_at', today())
+            ->sum('total_amount');
+
+        // Número de pedidos pendientes
+        $pendingOrders = Order::where('status', 'pending')->count();
+
+        // Productos más vendidos (top 5)
+        $topProducts = DB::table('order_items')
+            ->join('variants', 'order_items.variant_id', '=', 'variants.id')
+            ->join('products', 'variants.product_id', '=', 'products.id')
+            ->select('products.name', DB::raw('SUM(order_items.quantity) as total_sold'))
+            ->where('order_items.created_at', '>=', now()->startOfMonth())
+            ->groupBy('products.id', 'products.name')
+            ->orderBy('total_sold', 'desc')
+            ->limit(5)
+            ->get();
+
+        // Total de productos activos
+        $activeProducts = Product::where('active', true)->count();
+
+        return response()->json([
+            'today_sales' => (float) $todaySales,
+            'pending_orders' => $pendingOrders,
+            'top_products' => $topProducts,
+            'active_products' => $activeProducts,
+        ]);
+    }
     public function monthlySales()
     {
         $currentYear = date('Y');
