@@ -1,12 +1,44 @@
-import { STOCK_CONFIG } from "./constants"
+import { GridIcon3, GridIcon4 } from "./icons"
 
-export default function StockBadge({ status, tiny = false }) {
-  const cfg = STOCK_CONFIG[status] ?? STOCK_CONFIG.available
-  if (status === "available") return null
+export default function ProductsToolbar({ cols, setCols }) {
   return (
-    <span className={`inline-flex items-center gap-1 border rounded-full font-medium ${tiny ? "text-[9px] px-1.5 py-0.5" : "text-[10px] px-2 py-0.5"} ${cfg.color}`}>
-      <span className={`w-1 h-1 rounded-full ${cfg.dot}`} />
-      {cfg.label}
-    </span>
+    <div style={{
+      display: "flex",
+      background: "white",
+      border: "1px solid rgba(0,0,0,0.09)",
+      borderRadius: 9,
+      overflow: "hidden",
+      boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+    }}>
+      {[3, 4].map((n, i) => (
+        <button
+          key={n}
+          onClick={() => setCols(n)}
+          style={{
+            display: "flex", alignItems: "center", gap: 5,
+            padding: "0 11px",
+            height: 34,
+            background: cols === n ? "#f97316" : "transparent",
+            color: cols === n ? "white" : "#94a3b8",
+            border: "none",
+            borderLeft: i > 0 ? "1px solid rgba(0,0,0,0.08)" : "none",
+            cursor: "pointer",
+            transition: "all 0.14s ease",
+            fontSize: 12, fontWeight: 600,
+          }}
+          onMouseEnter={e => { if (cols !== n) { e.currentTarget.style.background = "rgba(249,115,22,0.06)"; e.currentTarget.style.color = "#f97316" } }}
+          onMouseLeave={e => { if (cols !== n) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#94a3b8" } }}
+        >
+          {n === 3 ? <GridIcon3 /> : <GridIcon4 />}
+          <span style={{ display: "none" }} className="cl-cols-label">{n}</span>
+        </button>
+      ))}
+
+      <style>{`
+        @media (min-width: 640px) {
+          .cl-cols-label { display: inline !important; }
+        }
+      `}</style>
+    </div>
   )
 }
