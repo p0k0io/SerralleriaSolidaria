@@ -32,8 +32,8 @@ class PaymentController extends Controller
 
 
             Log::info("👤 Usuario recibido:", [
-                'user_id_id' => $user?->id
-            ?->id]);
+                'user_id' => $user?->id
+            ]);
 
             if (! $user) {
                 Log::warning("❌ Usuario NO autenticado");
