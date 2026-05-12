@@ -28,9 +28,9 @@ const NAV_SECTIONS = [
     label: "Gestión",
     items: [
       { to: "/admin/categories", label: "Categorías",  icon: <IconTag /> },
+      { to: "/admin/attributes", label: "Atributos",   icon: <IconSliders /> },
       { to: "/admin/requests",   label: "Solicitudes", icon: <IconClipboard /> },
       { to: "/admin/orders",     label: "Órdenes",     icon: <IconShoppingBag /> },
-      { to: "/atr",              label: "Atributos",   icon: <IconSliders /> },
     ],
   },
 ];
@@ -69,8 +69,8 @@ function IconMenu()         { return <Svg size={18}><line x1="3" y1="6"  x2="21"
 ───────────────────────────────────────────────────────────── */
 const LABELS = {
   admin: "Admin", dashboard: "Dashboard", products: "Productos",
-  packs: "Packs", categories: "Categorías", requests: "Solicitudes",
-  orders: "Órdenes", atr: "Atributos",
+  packs: "Packs", categories: "Categorías", attributes: "Atributos", requests: "Solicitudes",
+  orders: "Órdenes",
 };
 
 function useBreadcrumbs() {

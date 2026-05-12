@@ -1,259 +1,294 @@
 import { Outlet, Link, useNavigate } from "react-router-dom"
 import { useState, useEffect, useRef } from "react"
 
-const CART_KEY  = "tienda_cart"
-const TOKEN_KEY = "token"
-
+const CART_KEY = "tienda_cart"
+const TOKEN_KEY = "token" 
 function getCartCount() {
   try {
-    return JSON.parse(localStorage.getItem(CART_KEY) || "[]").reduce((a, c) => a + c.qty, 0)
-  } catch { return 0 }
+    const cart = JSON.parse(localStorage.getItem(CART_KEY) || "[]")
+    return cart.reduce((a, c) => a + c.qty, 0)
+  } catch {
+    return 0
+  }
 }
 
 export default function ClientLayout() {
-  const [menuOpen,     setMenuOpen]     = useState(false)
+  const [menuOpen, setMenuOpen]     = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const [cartCount,    setCartCount]    = useState(getCartCount)
-  const [user,         setUser]         = useState(null)
-  const [loadingUser,  setLoadingUser]  = useState(true)
+  const [cartCount, setCartCount]   = useState(getCartCount)
+  const [user, setUser]             = useState(null) 
+  const [loadingUser, setLoadingUser] = useState(true)
   const userMenuRef = useRef(null)
-  const navigate    = useNavigate()
+  const navigate = useNavigate()
 
+ 
   useEffect(() => {
-    const sync = () => setCartCount(getCartCount())
-    window.addEventListener("cart-updated", sync)
-    window.addEventListener("storage", sync)
-    return () => { window.removeEventListener("cart-updated", sync); window.removeEventListener("storage", sync) }
+    const handler = () => setCartCount(getCartCount())
+    window.addEventListener("cart-updated", handler)
+    window.addEventListener("storage", handler)
+    return () => {
+      window.removeEventListener("cart-updated", handler)
+      window.removeEventListener("storage", handler)
+    }
   }, [])
+
 
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY)
-    if (!token) { setLoadingUser(false); return }
+    if (!token) {
+      setLoadingUser(false)
+      return
+    }
+
     fetch("http://localhost:8000/api/user", {
-      headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
     })
-      .then(r => { if (!r.ok) throw new Error(); return r.json() })
-      .then(d => setUser(d))
-      .catch(() => { localStorage.removeItem(TOKEN_KEY); setUser(null) })
+      .then((res) => {
+        if (!res.ok) throw new Error("Unauthenticated")
+        return res.json()
+      })
+      .then((data) => setUser(data))
+      .catch(() => {
+        // Token inválido o expirado → limpiamos
+        localStorage.removeItem(TOKEN_KEY)
+        setUser(null)
+      })
       .finally(() => setLoadingUser(false))
   }, [])
 
+  /* ── Cerrar user-menu al hacer clic fuera ── */
   useEffect(() => {
-    const h = e => { if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setUserMenuOpen(false) }
-    document.addEventListener("mousedown", h)
-    return () => document.removeEventListener("mousedown", h)
+    function handleClickOutside(e) {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setUserMenuOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
+  /* ── Cerrar sesión ── */
   function handleLogout() {
     const token = localStorage.getItem(TOKEN_KEY)
-    if (token) fetch("/api/logout", { method: "POST", headers: { Accept: "application/json", Authorization: `Bearer ${token}` } }).catch(() => {})
+    // Llama al endpoint de logout si tu API lo tiene (opcional)
+    if (token) {
+      fetch("/api/logout", {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      }).catch(() => {})
+    }
     localStorage.removeItem(TOKEN_KEY)
-    setUser(null); setUserMenuOpen(false); navigate("/")
+    setUser(null)
+    setUserMenuOpen(false)
+    navigate("/")
   }
 
-  const initials = (name = "") => name.split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() ?? "").join("")
+  /* ── Iniciales para el avatar ── */
+  function getInitials(name = "") {
+    return name
+      .split(" ")
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase() ?? "")
+      .join("")
+  }
 
-  const NAV_LINKS = [
-    { label: "Inicio",      to: "/" },
-    { label: "Productos",   to: "/productos" },
-    { label: "Categorías",  to: "/categorias" },
-    { label: "Seguimiento", to: "/seguimiento" },
-    { label: "Información", to: "/informacion" },
-    { label: "FAQ",         to: "/faq" },
+  const navLinks = [
+    {
+      label: "Inicio",
+      to: "/",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+      ),
+    },
+    {
+      label: "Productos",
+      to: "/productos",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="7" width="20" height="14" rx="2"/>
+          <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
+        </svg>
+      ),
+    },
+    {
+      label: "Categorías",
+      to: "/categorias",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+          <line x1="3" y1="6" x2="21" y2="6"/>
+        </svg>
+      ),
+    },
+    {
+      label: "Seguimiento",
+      to: "/seguimiento",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+      ),
+    },
+    {
+      label: "Información",
+      to: "/informacion",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      ),
+    },
+    {
+      label: "FAQ",
+      to: "/faq",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+        </svg>
+      ),
+    },
   ]
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f6f5f3" }}>
+    <div className="min-h-screen bg-gray-50">
+      {/* NAV */}
+      <nav className="sticky top-0 z-50 px-4 py-3">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
 
-      {/*
-        ══════════════════════════════════════════════
-        NAVBAR — fixed, full viewport width, 64px tall
-        Slightly warmer white than the page surface.
-        ══════════════════════════════════════════════
-      */}
-      <header
-        style={{
-          position: "fixed", top: 0, left: 0, right: 0, zIndex: 50,
-          height: 64,
-          background: "rgba(255,255,254,0.94)",
-          backdropFilter: "blur(16px) saturate(1.2)",
-          WebkitBackdropFilter: "blur(16px) saturate(1.2)",
-          borderBottom: "1px solid rgba(0,0,0,0.06)",
-          boxShadow: "0 1px 0 rgba(0,0,0,0.03)",
-        }}
-      >
-        <div style={{
-          height: "100%", maxWidth: 1600, margin: "0 auto",
-          padding: "0 28px",
-          display: "flex", alignItems: "center", gap: 8,
-        }}>
-
-          {/* Logo */}
-          <Link to="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none", marginRight: 8, flexShrink: 0 }}>
-            <div style={{
-              width: 30, height: 30,
-              background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-              borderRadius: 9,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 2px 8px rgba(249,115,22,0.30)",
-            }}>
+          {/* ISLA 1 — Logo */}
+          <div className="bg-white border border-orange-100 shadow-sm rounded-2xl px-4 py-2 flex items-center gap-2 shrink-0">
+            <div className="w-7 h-7 bg-orange-500 rounded-lg flex items-center justify-center">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="11" width="18" height="11" rx="2"/>
-                <path d="M7 11V7a5 5 0 0110 0v4"/>
+                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+                <line x1="3" y1="6" x2="21" y2="6"/>
               </svg>
             </div>
-            <span style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}>Tienda</span>
-          </Link>
+            <span className="text-orange-600 font-bold text-base tracking-tight">Tienda</span>
+          </div>
 
-          {/* Divider */}
-          <div style={{ width: 1, height: 20, background: "#e2e8f0", flexShrink: 0, display: "none" }} className="hidden-md-show" />
-
-          {/* Nav links */}
-          <nav style={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }} className="desktop-nav">
-            {NAV_LINKS.map(({ label, to }) => (
-              <Link key={label} to={to} style={{ textDecoration: "none" }}>
-                <span style={{
-                  display: "block",
-                  fontSize: 13, fontWeight: 500, color: "#64748b",
-                  padding: "6px 11px",
-                  borderRadius: 8,
-                  transition: "all 0.12s ease",
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = "#f1f5f9"; e.currentTarget.style.color = "#0f172a" }}
-                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#64748b" }}
-                >
-                  {label}
-                </span>
+          {/* ISLA 2 — Links (desktop) */}
+          <div className="hidden md:flex bg-white border border-orange-100 shadow-sm rounded-2xl px-5 py-2 items-center gap-1">
+            {navLinks.map(({ label, to, icon }) => (
+              <Link
+                key={label}
+                to={to}
+                className="flex items-center gap-1.5 text-slate-500 text-sm font-medium px-3 py-1.5 rounded-xl hover:bg-orange-50 hover:text-orange-600 transition-all duration-150"
+              >
+                <span className="opacity-70">{icon}</span>
+                {label}
               </Link>
             ))}
-          </nav>
+          </div>
 
-          {/* Right side */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto", flexShrink: 0 }}>
+          {/* ISLA 3 — Carrito + Auth */}
+          <div className="bg-white border border-orange-100 shadow-sm rounded-2xl px-3 py-2 flex items-center gap-2 shrink-0">
 
-            {/* Presupuesto pill */}
-            <Link to="/solicitud" style={{ textDecoration: "none" }} className="presupuesto-link">
-              <span style={{
-                display: "flex", alignItems: "center", gap: 6,
-                fontSize: 12.5, fontWeight: 600, color: "#c2410c",
-                background: "rgba(255,237,213,0.7)",
-                border: "1px solid rgba(253,186,116,0.5)",
-                padding: "6px 13px",
-                borderRadius: 9,
-                transition: "all 0.12s ease",
-                letterSpacing: "-0.01em",
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = "#fed7aa"; e.currentTarget.style.borderColor = "#fb923c" }}
-              onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,237,213,0.7)"; e.currentTarget.style.borderColor = "rgba(253,186,116,0.5)" }}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.8 }}>
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                </svg>
-                Presupuesto
-              </span>
+            {/* Carrito */}
+            <Link
+              to="/carrito"
+              className="relative w-9 h-9 rounded-xl border-2 border-orange-500 flex items-center justify-center text-orange-500 hover:bg-orange-500 hover:text-white transition-all duration-150 group"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="8" cy="21" r="1"/>
+                <circle cx="19" cy="21" r="1"/>
+                <path d="M2.05 2.05h2l2.66 12.42a2 2 0 002 1.58h9.78a2 2 0 001.95-1.57l1.65-7.43H5.12"/>
+              </svg>
+              {cartCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-orange-500 group-hover:bg-white group-hover:text-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center transition-all duration-150">
+                  {cartCount}
+                </span>
+              )}
             </Link>
 
-            {/* Cart */}
-            <Link to="/carrito" style={{ textDecoration: "none" }}>
-              <span
-                style={{
-                  position: "relative", display: "flex", alignItems: "center", justifyContent: "center",
-                  width: 36, height: 36, borderRadius: 9, color: "#64748b",
-                  transition: "all 0.12s ease",
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = "#f1f5f9"; e.currentTarget.style.color = "#0f172a" }}
-                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#64748b" }}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
-                  <path d="M2.05 2.05h2l2.66 12.42a2 2 0 002 1.58h9.78a2 2 0 001.95-1.57l1.65-7.43H5.12"/>
-                </svg>
-                {cartCount > 0 && (
-                  <span style={{
-                    position: "absolute", top: -1, right: -1,
-                    width: 16, height: 16, borderRadius: "50%",
-                    background: "#f97316", color: "white",
-                    fontSize: 10, fontWeight: 700,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>
-                    {cartCount}
-                  </span>
-                )}
-              </span>
-            </Link>
-
-            {/* Auth */}
+            {/* ── AUTH ZONE ── */}
             {loadingUser ? (
-              <div style={{ width: 72, height: 32, background: "#f1f5f9", borderRadius: 8 }} />
+              /* Skeleton mientras carga */
+              <div className="hidden sm:flex w-24 h-9 bg-orange-50 rounded-xl animate-pulse" />
             ) : user ? (
-              <div ref={userMenuRef} style={{ position: "relative" }}>
+              /* Usuario autenticado → chip con nombre + dropdown */
+              <div className="relative hidden sm:block" ref={userMenuRef}>
                 <button
-                  onClick={() => setUserMenuOpen(o => !o)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 7,
-                    padding: "4px 10px 4px 4px",
-                    background: "transparent", border: "none", cursor: "pointer",
-                    borderRadius: 9, transition: "all 0.12s ease",
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#f1f5f9"}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-xl hover:bg-orange-50 transition-all duration-150 group"
                 >
-                  <div style={{
-                    width: 28, height: 28, borderRadius: 8,
-                    background: "linear-gradient(135deg, #f97316, #ea580c)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 11, fontWeight: 700, color: "white", flexShrink: 0,
-                  }}>
-                    {initials(user.name)}
+                  {/* Avatar con iniciales */}
+                  <div className="w-7 h-7 rounded-lg bg-orange-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                    {getInitials(user.name)}
                   </div>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "#334155", maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {/* Nombre (truncado si es largo) */}
+                  <span className="text-slate-700 text-sm font-semibold max-w-[110px] truncate group-hover:text-orange-600 transition-colors">
                     {user.name.split(" ")[0]}
                   </span>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                    style={{ transition: "transform 0.2s", transform: userMenuOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
+                  {/* Chevron */}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                    className={`text-slate-400 transition-transform duration-200 ${userMenuOpen ? "rotate-180" : ""}`}
+                  >
                     <polyline points="6 9 12 15 18 9"/>
                   </svg>
                 </button>
 
+                {/* Dropdown */}
                 {userMenuOpen && (
-                  <div style={{
-                    position: "absolute", right: 0, top: "calc(100% + 8px)",
-                    width: 208, background: "white",
-                    border: "1px solid rgba(0,0,0,0.08)",
-                    borderRadius: 14, overflow: "hidden", zIndex: 100,
-                    boxShadow: "0 8px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06)",
-                  }}>
-                    <div style={{ padding: "14px 16px 12px", borderBottom: "1px solid #f1f5f9" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: 9, background: "linear-gradient(135deg, #f97316, #ea580c)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "white", flexShrink: 0 }}>
-                          {initials(user.name)}
-                        </div>
-                        <div style={{ minWidth: 0 }}>
-                          <p style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.name}</p>
-                          {user.email && <p style={{ fontSize: 11, color: "#94a3b8", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</p>}
-                        </div>
-                      </div>
+                  <div className="absolute right-0 mt-2 w-56 bg-white border border-orange-100 shadow-lg rounded-2xl overflow-hidden z-50">
+                    {/* Cabecera con info completa */}
+                    <div className="px-4 py-3 bg-orange-50 border-b border-orange-100">
+                      <p className="text-xs text-orange-400 font-medium uppercase tracking-wide">Sesión activa</p>
+                      <p className="text-slate-800 font-semibold text-sm mt-0.5 truncate">{user.name}</p>
+                      {user.email && (
+                        <p className="text-slate-400 text-xs truncate">{user.email}</p>
+                      )}
                     </div>
-                    <div style={{ padding: 6 }}>
-                      {[{ label: "Mi perfil", to: "/perfil" }, { label: "Mis pedidos", to: "/mis-pedidos" }].map(item => (
-                        <Link key={item.to} to={item.to} onClick={() => setUserMenuOpen(false)} style={{ textDecoration: "none" }}>
-                          <span style={{ display: "block", padding: "8px 12px", fontSize: 13, color: "#475569", borderRadius: 9, transition: "all 0.1s" }}
-                            onMouseEnter={e => { e.currentTarget.style.background = "#f8fafc"; e.currentTarget.style.color = "#0f172a" }}
-                            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#475569" }}>
-                            {item.label}
-                          </span>
-                        </Link>
-                      ))}
-                    </div>
-                    <div style={{ padding: "4px 6px 6px", borderTop: "1px solid #f1f5f9" }}>
-                      <button onClick={handleLogout} style={{
-                        width: "100%", padding: "8px 12px", background: "none", border: "none",
-                        fontSize: 13, color: "#ef4444", textAlign: "left", cursor: "pointer",
-                        borderRadius: 9, transition: "all 0.1s",
-                      }}
-                        onMouseEnter={e => e.currentTarget.style.background = "#fef2f2"}
-                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+
+                    {/* Opciones */}
+                    <Link
+                      to="/perfil"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                      </svg>
+                      Mi perfil
+                    </Link>
+                    <Link
+                      to="/mis-pedidos"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <path d="M16 10a4 4 0 01-8 0"/>
+                      </svg>
+                      Mis pedidos
+                    </Link>
+
+                    {/* Cerrar sesión */}
+                    <div className="border-t border-orange-50">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
                       >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+                          <polyline points="16 17 21 12 16 7"/>
+                          <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
                         Cerrar sesión
                       </button>
                     </div>
@@ -261,79 +296,102 @@ export default function ClientLayout() {
                 )}
               </div>
             ) : (
-              <Link to="/register" style={{ textDecoration: "none" }}>
-                <span style={{
-                  display: "flex", alignItems: "center",
-                  fontSize: 13, fontWeight: 600, color: "white",
-                  background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-                  padding: "7px 16px", borderRadius: 9,
-                  boxShadow: "0 2px 8px rgba(249,115,22,0.25)",
-                  transition: "all 0.12s ease", letterSpacing: "-0.01em",
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.background = "linear-gradient(135deg, #ea580c 0%, #c2410c 100%)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(234,88,12,0.35)" }}
-                  onMouseLeave={e => { e.currentTarget.style.background = "linear-gradient(135deg, #f97316 0%, #ea580c 100%)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(249,115,22,0.25)" }}
-                >
-                  Registro
-                </span>
+              /* No autenticado → botón Registro */
+              <Link
+                to="/register"
+                className="hidden sm:flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all duration-150"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                Registro
               </Link>
             )}
 
-            {/* Mobile menu button */}
+            {/* Hamburger */}
             <button
-              onClick={() => setMenuOpen(o => !o)}
-              className="mobile-menu-btn"
-              style={{
-                display: "none", width: 36, height: 36, borderRadius: 9,
-                background: "none", border: "none", cursor: "pointer",
-                alignItems: "center", justifyContent: "center", color: "#64748b",
-              }}
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="md:hidden w-9 h-9 rounded-xl flex items-center justify-center text-slate-500 hover:bg-orange-50 hover:text-orange-500 transition-all"
+              aria-label="Menu"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
-              </svg>
+              {menuOpen
+                ? <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                : <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              }
             </button>
           </div>
         </div>
 
-        {/* Mobile dropdown */}
+        {/* Mobile Menu */}
         {menuOpen && (
-          <div style={{
-            position: "absolute", top: "100%", left: 0, right: 0,
-            background: "rgba(255,255,254,0.97)", backdropFilter: "blur(16px)",
-            borderBottom: "1px solid rgba(0,0,0,0.06)",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
-          }}>
-            <div style={{ maxWidth: 1600, margin: "0 auto", padding: "12px 20px 16px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
-                {NAV_LINKS.map(({ label, to }) => (
-                  <Link key={label} to={to} onClick={() => setMenuOpen(false)} style={{ textDecoration: "none" }}>
-                    <span style={{ display: "block", padding: "10px 12px", fontSize: 13, fontWeight: 500, color: "#475569", borderRadius: 9, transition: "all 0.1s" }}
-                      onMouseEnter={e => { e.currentTarget.style.background = "#f1f5f9"; e.currentTarget.style.color = "#0f172a" }}
-                      onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#475569" }}>
-                      {label}
-                    </span>
+          <div className="md:hidden mt-2 mx-auto max-w-6xl bg-white border border-orange-100 shadow-md rounded-2xl overflow-hidden">
+            {navLinks.map(({ label, to }) => (
+              <Link
+                key={label}
+                to={to}
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center px-5 py-3 text-slate-600 text-sm font-medium hover:bg-orange-50 hover:text-orange-600 border-b border-orange-50 last:border-0 transition-colors"
+              >
+                {label}
+              </Link>
+            ))}
+
+            {/* Sección auth mobile */}
+            <div className="p-3 border-t border-orange-50">
+              {user ? (
+                <div className="space-y-1">
+                  {/* Info usuario */}
+                  <div className="flex items-center gap-3 px-3 py-2 bg-orange-50 rounded-xl mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                      {getInitials(user.name)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-slate-800 font-semibold text-sm truncate">{user.name}</p>
+                      {user.email && <p className="text-slate-400 text-xs truncate">{user.email}</p>}
+                    </div>
+                  </div>
+                  <Link
+                    to="/perfil"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-slate-600 text-sm hover:bg-orange-50 hover:text-orange-600 rounded-xl transition-colors"
+                  >
+                    Mi perfil
                   </Link>
-                ))}
-              </div>
+                  <Link
+                    to="/mis-pedidos"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-slate-600 text-sm hover:bg-orange-50 hover:text-orange-600 rounded-xl transition-colors"
+                  >
+                    Mis pedidos
+                  </Link>
+                  <button
+                    onClick={() => { handleLogout(); setMenuOpen(false) }}
+                    className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm font-semibold text-red-500 border border-red-200 rounded-xl hover:bg-red-50 transition-all"
+                  >
+                    Cerrar sesión
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  to="/register"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  Registrarse
+                </Link>
+              )}
             </div>
           </div>
         )}
-      </header>
+      </nav>
 
-      {/*
-        Global responsive styles injected here.
-        Keeps Tailwind out of the structural layout layer.
-      */}
-      <style>{`
-        @media (max-width: 768px) {
-          .desktop-nav     { display: none !important; }
-          .presupuesto-link { display: none !important; }
-          .mobile-menu-btn { display: flex !important; }
-        }
-      `}</style>
-
-      {/* Page content — pushed below the fixed 64px navbar */}
-      <div style={{ paddingTop: 64 }}>
+      {/* Content */}
+      <div className="px-4 py-6 max-w-6xl mx-auto">
         <Outlet />
       </div>
     </div>

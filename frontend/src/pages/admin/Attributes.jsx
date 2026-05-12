@@ -217,7 +217,7 @@ export default function AttributeManager() {
   const totalValues = attributes.reduce((sum, a) => sum + (a.values?.length ?? 0), 0)
 
   return (
-    <div>
+    <div className="p-6">
       {/* Cabecera */}
       <div className="mb-6">
         <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Atributos</h1>

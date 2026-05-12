@@ -18,7 +18,7 @@ import ClientLayout from "./layouts/ClientLayout"
 import AdminLayout from "./layouts/AdminLayout"
 import DashboardLayout from "./layouts/DashboardLayout"
 import Carrito from "./pages/admin/Carrito"
-import AttributeManager from "./components/AttributeManager"
+import AttributeManager from "./pages/admin/Attributes"
 
 import RequestsList from "./pages/admin/RequestsList"
 import Orders from "./pages/admin/OrdersBoards"
@@ -49,7 +49,6 @@ const authToken = localStorage.getItem("auth_token") // ← esta clave puede cam
             <Route path="faq" element={<FAQ />} />
             <Route path="categorias" element={<Categories />} />
             <Route path="carrito" element={<Carrito />} />
-            <Route path="atr" element={<AttributeManager />} />
             <Route path="solicitud" element={<CustomRequestPage />} />
 
             {/* Tracking público: el usuario escribe el código manualmente */}
@@ -77,6 +76,7 @@ const authToken = localStorage.getItem("auth_token") // ← esta clave puede cam
             <Route path="packs" element={<Packs />} />
             <Route path="categories" element={<CategoryAdmin />} />
             <Route path="cart" element={<Carrito />} />
+            <Route path="attributes" element={<AttributeManager />} />
             <Route path="requests" element={<RequestsList />} />
             <Route path="orders" element={<Orders />} />
           </Route>
