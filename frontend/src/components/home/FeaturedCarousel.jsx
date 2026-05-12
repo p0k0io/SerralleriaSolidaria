@@ -8,28 +8,35 @@ export default function FeaturedCarousel({ featured, cart, setCart, onViewDetail
 
   function scroll(dir) {
     if (!scrollRef.current) return
-    scrollRef.current.scrollBy({ left: dir === "left" ? -320 : 320, behavior: "smooth" })
+    scrollRef.current.scrollBy({ left: dir === "left" ? -300 : 300, behavior: "smooth" })
   }
 
   return (
-    <div className="mb-8">
-      <div className="flex items-center justify-between mb-4">
+    <div className="mb-12">
+      <div className="flex items-end justify-between mb-6">
         <div>
-          <h2 className="text-lg font-extrabold text-slate-800 tracking-tight">Productos Destacados</h2>
-          <p className="text-slate-400 text-xs mt-0.5">{featured.length} variantes seleccionadas</p>
+          <p className="text-[10px] font-bold text-orange-500 uppercase tracking-[0.14em] mb-2">Selección</p>
+          <h2 className="text-[22px] font-extrabold text-slate-800 tracking-tight leading-none">Destacados</h2>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => scroll("left")} className="w-8 h-8 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:border-orange-400 hover:text-orange-500 transition-all">
+        <div className="flex gap-1.5 pb-0.5">
+          <button
+            onClick={() => scroll("left")}
+            className="w-8 h-8 flex items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-400 hover:border-orange-200 hover:text-orange-500 hover:bg-orange-50/60 transition-all duration-150 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+          >
             <ChevronIcon direction="left" />
           </button>
-          <button onClick={() => scroll("right")} className="w-8 h-8 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:border-orange-400 hover:text-orange-500 transition-all">
+          <button
+            onClick={() => scroll("right")}
+            className="w-8 h-8 flex items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-400 hover:border-orange-200 hover:text-orange-500 hover:bg-orange-50/60 transition-all duration-150 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+          >
             <ChevronIcon direction="right" />
           </button>
         </div>
       </div>
+
       <div
         ref={scrollRef}
-        className="flex gap-4 overflow-x-auto pb-2 scroll-smooth"
+        className="flex gap-4 overflow-x-auto pb-3 -mx-1 px-1 scroll-smooth"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {featured.map((variant) => (
@@ -42,7 +49,8 @@ export default function FeaturedCarousel({ featured, cart, setCart, onViewDetail
           />
         ))}
       </div>
-      <div className="mt-6 border-t border-slate-100" />
+
+      <div className="mt-10 border-t border-slate-100/80" />
     </div>
   )
 }
