@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\AttributeValueController;
 use App\Http\Controllers\Api\RequestController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\OrderItemsController;
+use App\Http\Controllers\CartController;
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PaymentController;
@@ -103,6 +104,8 @@ Route::prefix('categories')->group(function () {
     Route::delete('/{id}', [CategoryController::class, 'destroy']);
 });
 
+
+
 /*
 |--------------------------------------------------------------------------
 | PACKS
@@ -183,7 +186,15 @@ Route::post('/login', [AuthController::class, 'login']);
 */
 
 Route::get('/stripe/session/{id}', [PaymentController::class, 'checkSession']);
-Route::post('/stripe/webhook', [PaymentController::class, 'webhook']);
+Route::post('/stripe/webhook', [PaymentController::class, 'stripeWebhook']);
+
+/*
+|--------------------------------------------------------------------------
+| SEGUIMIENTO DE PEDIDO (público — el cliente busca por TRK-XXXXXXXX)
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/orders/track/{tracking}', [OrderController::class, 'track']);
 
 /*
 |--------------------------------------------------------------------------
@@ -224,5 +235,22 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/orders/{id}', [OrderController::class, 'update']);
         Route::delete('/orders/{id}', [OrderController::class, 'destroy']);
     });
+
+
+    Route::post('/enhance-image', [ProductController::class, 'enhanceImage']);
+    
+
+    Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('/cart', [CartController::class, 'index']);
+
+    Route::post('/cart', [CartController::class, 'store']);
+
+    Route::put('/cart/{id}', [CartController::class, 'update']);
+
+    Route::delete('/cart/{id}', [CartController::class, 'destroy']);
+
+    Route::delete('/cart-clear', [CartController::class, 'clear']);
+});
 
 });
