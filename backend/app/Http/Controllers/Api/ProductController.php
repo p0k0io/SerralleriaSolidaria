@@ -8,16 +8,16 @@ use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 use App\Models\Variant;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
 {
-    // -------------------------------------------------------------------------
+    // =========================================================================
     // Helpers
-    // -------------------------------------------------------------------------
+    // =========================================================================
 
-    /**
-     * Formatea un producto con sus variantes para la respuesta JSON.
-     */
     private function formatProduct(Product $product): array
     {
         return [
@@ -41,9 +41,6 @@ class ProductController extends Controller
         ];
     }
 
-    /**
-     * Formatea una variante para la respuesta JSON.
-     */
     private function formatVariant(Variant $variant): array
     {
         return [
@@ -60,25 +57,46 @@ class ProductController extends Controller
         ];
     }
 
-    // -------------------------------------------------------------------------
-    // CRUD básico
-    // -------------------------------------------------------------------------
+    // =========================================================================
+    // Sube imagen a Imgur (anónimo) y devuelve URL pública directa.
+    // Necesita en .env:  IMGUR_CLIENT_ID=xxxxxxxxxxxxxxx
+    // Crea app gratis en https://api.imgur.com/oauth2/addclient
+    // =========================================================================
 
-    /**
-     * GET /api/products
-     * Devuelve todos los productos (activos e inactivos) con sus variantes y categoría.
-     * Soporta filtros via query string:
-     *   - search        : filtra por nombre de producto o SKU de variante
-     *   - active        : 1 | 0 | '' (todos)
-     *   - stock_status  : available | out_of_stock | next_batch
-     *   - category_id   : integer
-     *   - has_extra_keys: 1 | 0
-     */
+    private function uploadToImgur(string $realPath): string
+    {
+        $response = Http::timeout(60)
+            ->withHeaders([
+                'Authorization' => 'Client-ID ' . env('IMGUR_CLIENT_ID'),
+            ])
+            ->post('https://api.imgur.com/3/image', [
+                'image' => base64_encode(file_get_contents($realPath)),
+                'type'  => 'base64',
+            ]);
+
+        $data = $response->json();
+
+        Log::info('[Enhance] Respuesta Imgur', [
+            'status_code' => $response->status(),
+            'success'     => $data['success'] ?? false,
+            'link'        => $data['data']['link'] ?? null,
+        ]);
+
+        if (!($data['success'] ?? false) || empty($data['data']['link'])) {
+            throw new \Exception('Imgur upload failed: ' . json_encode($data['data'] ?? $data));
+        }
+
+        return $data['data']['link'];
+    }
+
+    // =========================================================================
+    // CRUD básico
+    // =========================================================================
+
     public function index(Request $request)
     {
         $query = Product::with(['variants', 'category']);
 
-        // Búsqueda por nombre o por SKU de variante
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -90,44 +108,30 @@ class ProductController extends Controller
             });
         }
 
-        // Filtro por estado activo/inactivo
         if ($request->has('active') && $request->active !== '') {
             $query->where('active', (bool) $request->active);
         }
-
-        // Filtro por estado de stock
         if ($request->filled('stock_status')) {
             $query->where('stock_status', $request->stock_status);
         }
-
-        // Filtro por categoría
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
         }
-
-        // Filtro por llaves extra
         if ($request->has('has_extra_keys') && $request->has_extra_keys !== '') {
             $query->where('has_extra_keys', (bool) $request->has_extra_keys);
         }
 
-        $products = $query->get()->map(fn($p) => $this->formatProduct($p));
-
-        return response()->json($products);
+        return response()->json(
+            $query->get()->map(fn($p) => $this->formatProduct($p))
+        );
     }
 
-    /**
-     * GET /api/products/{id}
-     */
     public function show($id)
     {
         $product = Product::with(['variants', 'category'])->findOrFail($id);
         return response()->json($this->formatProduct($product));
     }
 
-    /**
-     * POST /api/products
-     * Crea un producto sin variantes.
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -164,85 +168,66 @@ class ProductController extends Controller
         ], 201);
     }
 
-    /**
-     * PUT /api/products/{id}
-     */
-   public function update(Request $request, $id)
-{
-    Log::info('--- UPDATE PRODUCT START ---');
-    Log::info('Product ID:', ['id' => $id]);
-    Log::info('Request data:', $request->all());
+    public function update(Request $request, $id)
+    {
+        Log::info('--- UPDATE PRODUCT START ---');
+        Log::info('Product ID:', ['id' => $id]);
+        Log::info('Request data:', $request->all());
 
-    try {
-        $validated = $request->validate([
-            'name'               => 'sometimes|string|max:255',
-            'description'        => 'nullable|string',
-            'manufacturer'       => 'nullable|string|max:255',
-            'category_id'        => 'sometimes|exists:categories,id',
-            'active'             => 'boolean',
-            'shipping_price'     => 'nullable|numeric|min:0',
-            'installation_price' => 'nullable|numeric|min:0',
-            'stock_status'       => 'nullable|in:available,out_of_stock,next_batch',
-            'has_extra_keys'     => 'boolean',
-            'extra_key_price'    => 'nullable|numeric|min:0',
-        ]);
+        try {
+            $validated = $request->validate([
+                'name'               => 'sometimes|string|max:255',
+                'description'        => 'nullable|string',
+                'manufacturer'       => 'nullable|string|max:255',
+                'category_id'        => 'sometimes|exists:categories,id',
+                'active'             => 'boolean',
+                'shipping_price'     => 'nullable|numeric|min:0',
+                'installation_price' => 'nullable|numeric|min:0',
+                'stock_status'       => 'nullable|in:available,out_of_stock,next_batch',
+                'has_extra_keys'     => 'boolean',
+                'extra_key_price'    => 'nullable|numeric|min:0',
+            ]);
 
-        Log::info('Validated data:', $validated);
+            Log::info('Validated data:', $validated);
 
-    } catch (ValidationException $e) {
-        Log::error('Validation failed:', $e->errors());
+        } catch (ValidationException $e) {
+            Log::error('Validation failed:', $e->errors());
+            return response()->json([
+                'message' => 'Validation error',
+                'errors'  => $e->errors(),
+            ], 422);
+        }
+
+        $product = Product::findOrFail($id);
+
+        if (isset($validated['has_extra_keys']) && !$validated['has_extra_keys']) {
+            $validated['extra_key_price'] = null;
+        }
+
+        $product->update($validated);
+        $product->refresh();
+        Log::info('--- UPDATE PRODUCT END ---');
 
         return response()->json([
-            'message' => 'Validation error',
-            'errors' => $e->errors(),
-        ], 422);
+            'message' => 'Product updated',
+            'data'    => $this->formatProduct($product->fresh(['variants', 'category'])),
+        ]);
     }
 
-    $product = Product::findOrFail($id);
-
-    Log::info('Product BEFORE update:', $product->toArray());
-
-    // Lógica de negocio
-    if (isset($validated['has_extra_keys']) && !$validated['has_extra_keys']) {
-        $validated['extra_key_price'] = null;
-    }
-
-    Log::info('Final data to update:', $validated);
-
-    $product->update($validated);
-
-    $product->refresh();
-
-    Log::info('Product AFTER update:', $product->toArray());
-
-    Log::info('--- UPDATE PRODUCT END ---');
-
-    return response()->json([
-        'message' => 'Product updated',
-        'data'    => $this->formatProduct($product->fresh(['variants', 'category'])),
-    ]);
-}
-
-    /**
-     * DELETE /api/products/{id}
-     */
     public function destroy($id)
     {
-        $product = Product::findOrFail($id);
-        $product->delete();
-
+        Product::findOrFail($id)->delete();
         return response()->json(['message' => 'Product deleted']);
     }
 
-    // -------------------------------------------------------------------------
+    // =========================================================================
     // Activar / Desactivar
-    // -------------------------------------------------------------------------
+    // =========================================================================
 
     public function enable($id)
     {
         $product = Product::findOrFail($id);
         $product->update(['active' => true]);
-
         return response()->json([
             'message' => 'Producto activado',
             'product' => $this->formatProduct($product->fresh(['variants', 'category'])),
@@ -253,40 +238,39 @@ class ProductController extends Controller
     {
         $product = Product::findOrFail($id);
         $product->update(['active' => false]);
-
         return response()->json([
             'message' => 'Producto desactivado',
             'product' => $this->formatProduct($product->fresh(['variants', 'category'])),
         ]);
     }
 
-    // -------------------------------------------------------------------------
-    // Crear producto con variantes en una sola petición
-    // -------------------------------------------------------------------------
+    // =========================================================================
+    // Crear producto + variantes
+    // =========================================================================
 
-    /**
-     * POST /api/products/products-with-variants
-     */
     public function storeWithVariants(Request $request)
     {
-        $request->validate([
-            'name'               => 'required|string|max:255',
-            'category_id'        => 'required|integer|exists:categories,id',
-            'description'        => 'nullable|string',
-            'manufacturer'       => 'nullable|string|max:255',
-            'active'             => 'nullable|boolean',
-            'shipping_price'     => 'nullable|numeric|min:0',
-            'installation_price' => 'nullable|numeric|min:0',
-            'stock_status'       => 'nullable|in:available,out_of_stock,next_batch',
-            'has_extra_keys'     => 'nullable|boolean',
-            'extra_key_price'    => 'nullable|numeric|min:0',
+        Log::info('--- STORE WITH VARIANTS START ---');
+        Log::info('Request fields:', array_keys($request->all()));
 
-            'variants'                  => 'nullable|array',
-            'variants.*.sku'            => 'nullable|string',
-            'variants.*.price'          => 'required|numeric|min:0',
-            'variants.*.active'         => 'nullable|boolean',
-            'variants.*.stock_status'   => 'nullable|in:available,out_of_stock,next_batch',
-            'variants.*.image'          => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        $request->validate([
+            'name'                            => 'required|string|max:255',
+            'category_id'                     => 'required|integer|exists:categories,id',
+            'description'                     => 'nullable|string',
+            'manufacturer'                    => 'nullable|string|max:255',
+            'active'                          => 'nullable|boolean',
+            'shipping_price'                  => 'nullable|numeric|min:0',
+            'installation_price'              => 'nullable|numeric|min:0',
+            'stock_status'                    => 'nullable|in:available,out_of_stock,next_batch',
+            'has_extra_keys'                  => 'nullable|boolean',
+            'extra_key_price'                 => 'nullable|numeric|min:0',
+            'variants'                        => 'nullable|array',
+            'variants.*.sku'                  => 'nullable|string',
+            'variants.*.price'                => 'required|numeric|min:0',
+            'variants.*.active'               => 'nullable|boolean',
+            'variants.*.stock_status'         => 'nullable|in:available,out_of_stock,next_batch',
+            'variants.*.image'                => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'variants.*.enhanced_image_url'   => 'nullable|url',
         ]);
 
         DB::beginTransaction();
@@ -307,27 +291,43 @@ class ProductController extends Controller
                 'extra_key_price'    => $hasExtraKeys ? $request->input('extra_key_price') : null,
             ]);
 
-            if ($request->has('variants')) {
-                foreach ($request->variants as $key => $v) {
-                    $imagePath = null;
+            Log::info('Producto creado ID:', ['id' => $product->id]);
 
-                    if ($request->hasFile("variants.$key.image")) {
-                        $imagePath = $request->file("variants.$key.image")
-                            ->store('variant_images', 'public');
+            foreach (($request->variants ?? []) as $key => $v) {
+                $imagePath = null;
+
+                $enhancedUrl = $v['enhanced_image_url'] ?? null;
+                if ($enhancedUrl) {
+                    Log::info("Variante $key: descargando imagen mejorada", ['url' => $enhancedUrl]);
+                    try {
+                        $contents  = Http::timeout(30)->get($enhancedUrl)->body();
+                        $filename  = 'variant_images/' . uniqid('enhanced_', true) . '.jpg';
+                        Storage::disk('public')->put($filename, $contents);
+                        $imagePath = $filename;
+                    } catch (\Exception $e) {
+                        Log::warning("Variante $key: fallo descarga imagen mejorada", ['error' => $e->getMessage()]);
                     }
-
-                    Variant::create([
-                        'product_id'   => $product->id,
-                        'sku'          => $v['sku'] ?? null,
-                        'price'        => $v['price'],
-                        'active'       => $v['active'] ?? true,
-                        'stock_status' => $v['stock_status'] ?? 'available',
-                        'image'        => $imagePath,
-                    ]);
                 }
+
+                if (!$imagePath && $request->hasFile("variants.$key.image")) {
+                    $imagePath = $request->file("variants.$key.image")
+                        ->store('variant_images', 'public');
+                }
+
+                $variant = Variant::create([
+                    'product_id'   => $product->id,
+                    'sku'          => $v['sku'] ?? null,
+                    'price'        => $v['price'],
+                    'active'       => $v['active'] ?? true,
+                    'stock_status' => $v['stock_status'] ?? 'available',
+                    'image'        => $imagePath,
+                ]);
+
+                Log::info("Variante $key creada", ['id' => $variant->id]);
             }
 
             DB::commit();
+            Log::info('--- STORE WITH VARIANTS OK ---');
 
             return response()->json([
                 'status'  => 'success',
@@ -337,20 +337,174 @@ class ProductController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'status'  => 'error',
+            Log::error('--- STORE WITH VARIANTS ERROR ---', [
                 'message' => $e->getMessage(),
-            ], 500);
+                'trace'   => $e->getTraceAsString(),
+            ]);
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Añadir variante a producto existente
-    // -------------------------------------------------------------------------
+    // =========================================================================
+    // ENHANCE IMAGE — ModelsLab vía Imgur
+    // POST /api/enhance-image
+    //
+    // Flujo:
+    //   1. Recibe archivo imagen (multipart)
+    //   2. Sube a Imgur anónimamente → URL pública real (no localhost)
+    //   3. Pasa esa URL a ModelsLab image-to-image
+    //   4. Polling si status=processing
+    //   5. Descarga resultado → storage/public/variant_images/
+    //   6. Retorna { enhanced_url }
+    //
+    // .env requerido:
+    //   IMGUR_CLIENT_ID=xxxxxxxxxxxxxxx       (https://api.imgur.com/oauth2/addclient)
+    //   MODELSLAB_API_KEY=tu_api_key
+    // =========================================================================
 
-    /**
-     * POST /api/products/{id}/variants
-     */
+    public function enhanceImage(Request $request)
+{
+    Log::info('=== ENHANCE IMAGE START ===');
+
+    $request->validate([
+        'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:8192',
+    ]);
+
+    try {
+        // ── 1. Guardar imagen en temp con URL pública del túnel ───────────
+        $file     = $request->file('image');
+        $ext      = $file->getClientOriginalExtension() ?: 'jpg';
+        $tempPath = 'temp/' . uniqid('enhance_', true) . '.' . $ext;
+
+        Storage::disk('public')->put($tempPath, file_get_contents($file->getRealPath()));
+
+        // URL pública accesible por ModelsLab (túnel Cloudflare)
+        $publicUrl = 'https://pennsylvania-emotions-substance-object.trycloudflare.com' . '/storage/' . $tempPath;
+
+        Log::info('[Enhance] Imagen guardada en temp', [
+            'path' => $tempPath,
+            'url'  => $publicUrl,
+        ]);
+
+        // ── 2. Llamar a ModelsLab igual que el curl que funciona ─────────
+        $response = Http::timeout(120)
+            ->withHeaders(['Content-Type' => 'application/json'])
+            ->post('https://modelslab.com/api/v7/images/image-to-image', [
+                'key'          => 'XeOjZ9tCqeOULnGmTRcMO76jWOHn8IWBPIBfTmGv1H3boi9Q59Zsi11gErfM',
+                'model_id'     => 'gemini-3.1-i2i',
+                'prompt'       => 'Transform this image into a clean professional studio product photo while '
+                                . 'preserving the exact same object, proportions, composition, camera angle, '
+                                . 'perspective, pose, framing, orientation, textures, colors, and all original '
+                                . 'details. Replace the background with a pure white seamless background (#FFFFFF) '
+                                . 'and apply soft, uniform studio lighting with balanced exposure and minimal '
+                                . 'shadows. Improve sharpness, clarity, and overall image quality without changing '
+                                . "the product's design or appearance. Keep the image realistic, natural, "
+                                . 'high-resolution, and optimized for e-commerce/product listing use. '
+                                . 'Do not alter the shape, angle, position, branding, materials, or dimensions '
+                                . 'of the object in any way',
+                'init_image'   => [$publicUrl],
+                'aspect_ratio' => '1:1',
+            ]);
+
+        $data = $response->json();
+
+        Log::info('[Enhance] Respuesta ModelsLab inicial', [
+            'status_code' => $response->status(),
+            'body'        => $data,
+        ]);
+
+        if (!$response->successful()) {
+            throw new \Exception('ModelsLab HTTP ' . $response->status() . ': ' . ($data['message'] ?? 'sin mensaje'));
+        }
+
+        // ── 3. Resultado inmediato o polling ──────────────────────────────
+        $enhancedImageUrl = null;
+
+        if (!empty($data['output'][0])) {
+            $enhancedImageUrl = $data['output'][0];
+            Log::info('[Enhance] Imagen lista de inmediato', ['url' => $enhancedImageUrl]);
+
+        } elseif (($data['status'] ?? '') === 'processing' && !empty($data['fetch_result'])) {
+            $fetchUrl  = $data['fetch_result'];
+            $maxPolls  = 20;
+            $pollDelay = 5;
+
+            Log::info('[Enhance] Polling...', ['fetch_url' => $fetchUrl]);
+
+            for ($i = 1; $i <= $maxPolls; $i++) {
+                sleep($pollDelay);
+
+                $pollRes  = Http::timeout(30)
+                    ->withHeaders(['Content-Type' => 'application/json'])
+                    ->post($fetchUrl, [
+                        'key' => 'XeOjZ9tCqeOULnGmTRcMO76jWOHn8IWBPIBfTmGv1H3boi9Q59Zsi11gErfM',
+                    ]);
+                $pollData = $pollRes->json();
+
+                Log::info("[Enhance] Poll $i/$maxPolls", [
+                    'status' => $pollData['status'] ?? 'unknown',
+                    'body'   => $pollData,
+                ]);
+
+                if (!empty($pollData['output'][0])) {
+                    $enhancedImageUrl = $pollData['output'][0];
+                    Log::info("[Enhance] Lista en poll $i", ['url' => $enhancedImageUrl]);
+                    break;
+                }
+
+                if (($pollData['status'] ?? '') === 'error') {
+                    throw new \Exception('ModelsLab polling error: ' . ($pollData['message'] ?? 'sin mensaje'));
+                }
+            }
+
+            if (!$enhancedImageUrl) {
+                throw new \Exception("Timeout: sin imagen tras $maxPolls polls");
+            }
+
+        } else {
+            throw new \Exception('Respuesta inesperada de ModelsLab: ' . json_encode($data));
+        }
+
+        // ── 4. Descargar imagen mejorada y guardar en storage ─────────────
+        $contents          = Http::timeout(60)->get($enhancedImageUrl)->body();
+        $enhancedPath      = 'variant_images/' . uniqid('ai_', true) . '.jpg';
+        Storage::disk('public')->put($enhancedPath, $contents);
+        $enhancedPublicUrl = Storage::disk('public')->url($enhancedPath);
+
+        Log::info('[Enhance] Imagen mejorada guardada', [
+            'path' => $enhancedPath,
+            'url'  => $enhancedPublicUrl,
+        ]);
+
+        // ── 5. Limpiar temp ───────────────────────────────────────────────
+        Storage::disk('public')->delete($tempPath);
+        Log::info('[Enhance] Temp eliminado');
+
+        Log::info('=== ENHANCE IMAGE OK ===');
+
+        return response()->json([
+            'success'      => true,
+            'enhanced_url' => $enhancedPublicUrl,
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('=== ENHANCE IMAGE ERROR ===', ['message' => $e->getMessage()]);
+
+        if (isset($tempPath)) {
+            Storage::disk('public')->delete($tempPath);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+    // =========================================================================
+    // Añadir variante a producto existente
+    // =========================================================================
+
     public function addVariant(Request $request, $productId)
     {
         $product = Product::findOrFail($productId);
@@ -360,7 +514,7 @@ class ProductController extends Controller
             'price'        => 'required|numeric|min:0',
             'active'       => 'boolean',
             'stock_status' => 'nullable|in:available,out_of_stock,next_batch',
-            'image'        => 'nullable|image|max:2048',
+            'image'        => 'nullable|image|max:4096',
         ]);
 
         $path = $request->hasFile('image')
@@ -373,8 +527,7 @@ class ProductController extends Controller
             'active'       => $validated['active'] ?? true,
             'stock_status' => $validated['stock_status'] ?? 'available',
             'image'        => $path,
-            'destacado'     => false,
-            'stock_status' => $validated['stock_status'] ?? 'available',
+            'destacado'    => false,
         ]);
 
         return response()->json([
@@ -383,62 +536,39 @@ class ProductController extends Controller
         ]);
     }
 
-    // -------------------------------------------------------------------------
-    // Endpoints especiales de listado
-    // -------------------------------------------------------------------------
+    // =========================================================================
+    // Endpoints especiales
+    // =========================================================================
 
-    /**
-     * GET /api/products/featured
-     * Productos que tienen al menos una variante destacada y activa.
-     */
     public function featured()
     {
         $products = Product::with(['variants', 'category'])
-            ->whereHas('variants', function ($q) {
-                $q->where('destacado', true)->where('active', true);
-            })
+            ->whereHas('variants', fn($q) => $q->where('destacado', true)->where('active', true))
             ->get()
             ->map(fn($p) => $this->formatProduct($p));
 
         return response()->json($products);
     }
 
-    /**
-     * GET /api/products/search
-     * Búsqueda rápida de productos (para autocomplete / filtros de frontend).
-     * Query params:
-     *   - q            : texto libre (nombre, fabricante, SKU de variante)
-     *   - category_id  : integer
-     *   - active       : 1 | 0
-     *   - stock_status : available | out_of_stock | next_batch
-     */
     public function search(Request $request)
     {
         $query = Product::with(['variants', 'category']);
 
         if ($request->filled('q')) {
             $q = $request->q;
-            $query->where(function ($builder) use ($q) {
-                $builder->where('name', 'like', "%{$q}%")
-                        ->orWhere('manufacturer', 'like', "%{$q}%")
-                        ->orWhereHas('variants', fn($vq) => $vq->where('sku', 'like', "%{$q}%"));
+            $query->where(function ($b) use ($q) {
+                $b->where('name', 'like', "%{$q}%")
+                  ->orWhere('manufacturer', 'like', "%{$q}%")
+                  ->orWhereHas('variants', fn($vq) => $vq->where('sku', 'like', "%{$q}%"));
             });
         }
 
-        if ($request->filled('category_id')) {
-            $query->where('category_id', $request->category_id);
-        }
-
+        if ($request->filled('category_id'))  $query->where('category_id', $request->category_id);
+        if ($request->filled('stock_status'))  $query->where('stock_status', $request->stock_status);
         if ($request->has('active') && $request->active !== '') {
             $query->where('active', (bool) $request->active);
         }
 
-        if ($request->filled('stock_status')) {
-            $query->where('stock_status', $request->stock_status);
-        }
-
-        $results = $query->get()->map(fn($p) => $this->formatProduct($p));
-
-        return response()->json($results);
+        return response()->json($query->get()->map(fn($p) => $this->formatProduct($p)));
     }
 }

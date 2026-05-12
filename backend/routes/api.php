@@ -104,6 +104,8 @@ Route::prefix('categories')->group(function () {
     Route::delete('/{id}', [CategoryController::class, 'destroy']);
 });
 
+
+
 /*
 |--------------------------------------------------------------------------
 | PACKS
@@ -230,6 +232,8 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
 
+    Route::post('/enhance-image', [ProductController::class, 'enhanceImage']);
+    
 
     Route::middleware('auth:sanctum')->group(function () {
 
