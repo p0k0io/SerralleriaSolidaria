@@ -1,4 +1,4 @@
-import { Outlet, Link, useNavigate } from "react-router-dom"
+import { Outlet, Link, useNavigate} from "react-router-dom"
 import { useState, useEffect, useRef } from "react"
 
 const CART_KEY = "tienda_cart"
@@ -169,13 +169,10 @@ export default function ClientLayout() {
 
           {/* ISLA 1 — Logo */}
           <div className="bg-white border border-orange-100 shadow-sm rounded-2xl px-4 py-2 flex items-center gap-2 shrink-0">
-            <div className="w-7 h-7 bg-orange-500 rounded-lg flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
-                <line x1="3" y1="6" x2="21" y2="6"/>
-              </svg>
+            <div className="w-32 h-7 rounded-lg flex items-center justify-center">
+              <img src="./logoweb.png" alt="" />
             </div>
-            <span className="text-orange-600 font-bold text-base tracking-tight">Tienda</span>
+            <span className="text-orange-600 font-bold text-base tracking-tight"><img src="./" alt="" /></span>
           </div>
 
           {/* ISLA 2 — Links (desktop) */}
