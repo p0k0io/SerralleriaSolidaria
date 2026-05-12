@@ -557,10 +557,6 @@ export default function OrderTracking() {
 
   return (
     <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, color: "#0f172a", margin: "0 0 4px", letterSpacing: "-0.03em" }}>Seguimiento de pedido</h1>
-        <p style={{ fontSize: 14, color: "#94a3b8", margin: 0 }}>Consulta el estado de tu pedido en tiempo real.</p>
-      </div>
 
       {(phase === "idle" || phase === "loading") && <IdleScreen onSearch={search} loading={phase === "loading"} />}
       {phase === "found" && order && <ResultScreen order={order} onReset={reset} showBack={showBack} />}
