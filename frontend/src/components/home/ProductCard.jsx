@@ -47,6 +47,7 @@ export default function ProductCard({
           product_name: item.product_name,
           price: item.price,
           qty: item.qty,
+          installation_requested: item.installation_requested,
         },
         {
           headers: {
@@ -71,12 +72,14 @@ export default function ProductCard({
 
     e.stopPropagation()
 
+    const existing = cart.find((c) => c.id === selected.id)
     const item = {
       id: selected.id,
       sku: selected.sku,
       product_name: name,
       price: selected.price,
       qty,
+      installation_requested: existing?.installation_requested ?? false,
     }
 
     setCart(prev => {

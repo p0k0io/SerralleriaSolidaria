@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('product_name');
 
             $table->integer('qty')->default(1);
+            $table->boolean('installation_requested')->default(false);
 
             $table->decimal('price', 10, 2);
 

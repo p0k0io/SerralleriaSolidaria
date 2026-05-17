@@ -40,6 +40,7 @@ async function fetchBackendCart(token) {
     product_name: item.product_name,
     price: item.price,
     qty: item.qty,
+    installation_requested: item.installation_requested ?? false,
   }))
 }
 
@@ -53,6 +54,7 @@ async function pushItemToBackend(token, item) {
       product_name: item.product_name,
       price: item.price,
       qty: item.qty,
+      installation_requested: item.installation_requested ?? false,
     }),
   })
   if (!res.ok) throw new Error("Error al guardar item en BBDD")
@@ -65,7 +67,10 @@ async function updateItemInBackend(token, item) {
   const res = await fetch(`http://localhost:8000/api/cart/${item.cart_id}`, {
     method: "PUT",
     headers: authHeaders(token),
-    body: JSON.stringify({ qty: item.qty }),
+    body: JSON.stringify({
+      qty: item.qty,
+      installation_requested: item.installation_requested,
+    }),
   })
   if (!res.ok) throw new Error("Error al actualizar item en BBDD")
 }
@@ -136,7 +141,7 @@ function ProductIcon({ name = "", size = 28 }) {
 
 // ─── CartRow ──────────────────────────────────────────────────────────────────
 
-function CartRow({ item, onQty, onRemove }) {
+function CartRow({ item, onQty, onRemove, onInstallToggle }) {
   const price = Number(item.price) || 0
   const qty = Number(item.qty) || 0
 
@@ -150,6 +155,15 @@ function CartRow({ item, onQty, onRemove }) {
         <p className="font-bold text-slate-800 text-sm truncate">{item.product_name}</p>
         <p className="font-mono text-[11px] text-slate-400 mt-0.5">{item.sku}</p>
         <p className="font-extrabold text-orange-500 text-base mt-1">€{price.toFixed(2)}</p>
+        <label className="mt-3 inline-flex items-center gap-2 text-xs text-slate-500">
+          <input
+            type="checkbox"
+            checked={Boolean(item.installation_requested)}
+            onChange={() => onInstallToggle(item.id, !item.installation_requested)}
+            className="w-4 h-4 rounded border-slate-300 text-orange-500 focus:ring-orange-200"
+          />
+          Pedir montaje
+        </label>
       </div>
 
       <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden shrink-0">
@@ -334,6 +348,12 @@ export default function CartPage() {
           const exists = backendCart.find((b) => b.id === localItem.id)
           if (!exists) {
             mergePromises.push(pushItemToBackend(token, localItem))
+          } else if (exists.installation_requested !== localItem.installation_requested) {
+            mergePromises.push(updateItemInBackend(token, {
+              cart_id: exists.cart_id,
+              qty: exists.qty,
+              installation_requested: localItem.installation_requested,
+            }))
           }
         }
 
@@ -385,7 +405,11 @@ export default function CartPage() {
         const item = loadCart().find((i) => i.id === id)
         if (item?.cart_id) {
           try {
-            await updateItemInBackend(token, { cart_id: item.cart_id, qty })
+            await updateItemInBackend(token, {
+              cart_id: item.cart_id,
+              qty,
+              installation_requested: item.installation_requested,
+            })
           } catch (err) {
             console.error("Error actualizando qty en BBDD:", err)
           }
@@ -396,6 +420,32 @@ export default function CartPage() {
   )
 
   // ── Eliminar item ─────────────────────────────────────────────────────────
+  const toggleInstallation = useCallback(
+    async (id, installation_requested) => {
+      setCart((prev) => {
+        const next = prev.map((i) => (i.id === id ? { ...i, installation_requested } : i))
+        persistLocal(next)
+        return next
+      })
+
+      if (user && token) {
+        const item = loadCart().find((i) => i.id === id)
+        if (item?.cart_id) {
+          try {
+            await updateItemInBackend(token, {
+              cart_id: item.cart_id,
+              qty: item.qty,
+              installation_requested,
+            })
+          } catch (err) {
+            console.error("Error actualizando montaje en BBDD:", err)
+          }
+        }
+      }
+    },
+    [user, token]
+  )
+
   const removeItem = useCallback(
     async (id) => {
       // Capturamos cart_id ANTES de borrar del estado
@@ -617,7 +667,7 @@ export default function CartPage() {
             {/* Items del carrito */}
             <div className="flex flex-col gap-3">
               {cart.map((item) => (
-                <CartRow key={item.id} item={item} onQty={updateQty} onRemove={removeItem} />
+                <CartRow key={item.id} item={item} onQty={updateQty} onRemove={removeItem} onInstallToggle={toggleInstallation} />
               ))}
             </div>
           </div>

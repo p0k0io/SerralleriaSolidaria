@@ -79,6 +79,7 @@ export default function Login() {
         product_name: item.product_name,
         price: item.price,
         qty: item.qty,
+        installation_requested: item.installation_requested ?? false,
       }))
 
       /*
@@ -87,21 +88,37 @@ export default function Login() {
       |--------------------------------------------------------------------------
       */
 
-      const uploadPromises = localCart
-        .filter((localItem) => !backendCart.find((b) => b.id === localItem.id))
-        .map((item) =>
-          fetch("http://localhost:8000/api/cart", {
+      const uploadPromises = localCart.map((localItem) => {
+        const backendItem = backendCart.find((b) => b.id === localItem.id)
+
+        if (!backendItem) {
+          return fetch("http://localhost:8000/api/cart", {
             method: "POST",
             headers: authHeaders(token),
             body: JSON.stringify({
-              variant_id: item.id,
-              sku: item.sku,
-              product_name: item.product_name,
-              price: item.price,
-              qty: item.qty,
+              variant_id: localItem.id,
+              sku: localItem.sku,
+              product_name: localItem.product_name,
+              price: localItem.price,
+              qty: localItem.qty,
+              installation_requested: localItem.installation_requested ?? false,
             }),
           })
-        )
+        }
+
+        if (backendItem.installation_requested !== localItem.installation_requested) {
+          return fetch(`http://localhost:8000/api/cart/${backendItem.cart_id}`, {
+            method: "PUT",
+            headers: authHeaders(token),
+            body: JSON.stringify({
+              qty: backendItem.qty,
+              installation_requested: localItem.installation_requested,
+            }),
+          })
+        }
+
+        return Promise.resolve()
+      })
 
       await Promise.allSettled(uploadPromises)
 
@@ -122,6 +139,7 @@ export default function Login() {
         product_name: item.product_name,
         price: item.price,
         qty: item.qty,
+        installation_requested: item.installation_requested ?? false,
       }))
 
       /*

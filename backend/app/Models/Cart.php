@@ -16,5 +16,10 @@ class Cart extends Model
         'product_name',
         'qty',
         'price',
+        'installation_requested',
+    ];
+
+    protected $casts = [
+        'installation_requested' => 'boolean',
     ];
 }

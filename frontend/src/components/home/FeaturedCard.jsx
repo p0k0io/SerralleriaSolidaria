@@ -17,7 +17,7 @@ export default function FeaturedCard({ variant, cart, setCart, onViewDetail }) {
       const existing = prev.find((c) => c.id === variant.id)
       const next = existing
         ? prev.map((c) => c.id === variant.id ? { ...c, qty: c.qty + qty } : c)
-        : [...prev, { id: variant.id, sku: variant.sku, product_name: productName, price: variant.price, qty }]
+        : [...prev, { id: variant.id, sku: variant.sku, product_name: productName, price: variant.price, qty, installation_requested: false }]
       persistCart(next)
       return next
     })

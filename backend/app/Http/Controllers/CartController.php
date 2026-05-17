@@ -56,6 +56,7 @@ class CartController extends Controller
                 'product_name' => 'required|string',
                 'price'        => 'required|numeric',
                 'qty'          => 'required|integer|min:1',
+                'installation_requested' => 'nullable|boolean',
             ]);
 
             $cartItem = Cart::where('user_id', $user->id)
@@ -66,6 +67,12 @@ class CartController extends Controller
 
                 $cartItem->increment('qty', $validated['qty']);
 
+                if (array_key_exists('installation_requested', $validated)) {
+                    $cartItem->update([
+                        'installation_requested' => $validated['installation_requested'],
+                    ]);
+                }
+
             } else {
 
                 Cart::create([
@@ -74,7 +81,8 @@ class CartController extends Controller
                     'sku'         => $validated['sku'] ?? null,
                     'product_name' => $validated['product_name'],
                     'price'       => $validated['price'],
-                    'qty'         => $validated['qty']
+                    'qty'         => $validated['qty'],
+                    'installation_requested' => $validated['installation_requested'] ?? false,
                 ]);
 
             }
@@ -108,12 +116,11 @@ class CartController extends Controller
             ->firstOrFail();
 
         $validated = $request->validate([
-            'qty' => 'required|integer|min:1'
+            'qty' => 'required|integer|min:1',
+            'installation_requested' => 'nullable|boolean',
         ]);
 
-        $cartItem->update([
-            'qty' => $validated['qty']
-        ]);
+        $cartItem->update($validated);
 
         return response()->json([
             'success' => true

@@ -81,7 +81,7 @@ function ProductCard({ product, cart, setCart, onViewDetail }) {
       const existing = prev.find((c) => c.id === selected.id)
       const next = existing
         ? prev.map((c) => c.id === selected.id ? { ...c, qty: c.qty + qty } : c)
-        : [...prev, { id: selected.id, sku: selected.sku, product_name: product.name, price: selected.price, qty }]
+        : [...prev, { id: selected.id, sku: selected.sku, product_name: product.name, price: selected.price, qty, installation_requested: false }]
       persistCart(next)
       return next
     })
