@@ -8,8 +8,8 @@ export default function Categories() {
   return (
     <div className="p-6 space-y-3">
       <h1 className="text-2xl font-bold text-slate-800 mb-2">Categorías</h1>
-      <CreateCategory onCreated={() => setRefreshCategories((prev) => !prev)} />
-      <ShowCategories refreshSignal={refreshCategories} />
+{/*       <CreateCategory onCreated={() => setRefreshCategories((prev) => !prev)} />
+ */}      <ShowCategories refreshSignal={refreshCategories} />
     </div>
   );
 }
