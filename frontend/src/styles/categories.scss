@@ -1,0 +1,102 @@
+/* Categories section styles */
+
+$category-border: #e2e8f0;
+$category-bg: #ffffff;
+$category-text: #0f172a;
+$category-muted: #64748b;
+$category-active: #f59e0b;
+
+.category-card {
+  background: $category-bg;
+  border: 1px solid $category-border;
+  border-radius: 1rem;
+  padding: 1rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.category-card:hover {
+  border-color: darken($category-border, 6%);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.category-card__name {
+  font-weight: 700;
+  color: $category-text;
+  font-size: 0.875rem;
+}
+
+.category-card__meta {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  color: $category-muted;
+  font-size: 0.75rem;
+}
+
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.6875rem;
+  border: 1px solid #fde68a;
+}
+
+.category-button {
+  background: #ffffff;
+  color: $category-text;
+  border: 1px solid $category-border;
+  border-radius: 0.75rem;
+  font-size: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.category-button:hover {
+  background: #f8fafc;
+}
+
+.category-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.category-field {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.category-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: $category-muted;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.category-input,
+.category-textarea,
+.category-select {
+  width: 100%;
+  border: 1px solid $category-border;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: $category-text;
+  background: $category-bg;
+}
+
+.category-input:focus,
+.category-select:focus,
+.category-textarea:focus {
+  outline: none;
+  border-color: $category-active;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
+}

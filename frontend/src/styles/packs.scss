@@ -1,0 +1,259 @@
+/* Packs section styles */
+
+$pack-border: #e2e8f0;
+$pack-bg: #ffffff;
+$pack-surface: #f8fafc;
+$pack-text: #0f172a;
+$pack-muted: #64748b;
+$pack-action: #f59e0b;
+$pack-danger: #ef4444;
+
+.packs-root {
+  min-height: 100vh;
+  background: #f8fafc;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.packs-header {
+  padding: 1.75rem 1.25rem 1.25rem;
+}
+
+.packs-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: $pack-text;
+  letter-spacing: -0.02em;
+}
+
+.packs-subtitle {
+  font-size: 0.75rem;
+  color: $pack-muted;
+}
+
+.packs-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-radius: 1rem;
+  color: $pack-danger;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.packs-grid {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 0 1.25rem 2.5rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.packs-card {
+  background: $pack-bg;
+  border: 1px solid $pack-border;
+  border-radius: 1.25rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+  transition: all 0.15s ease;
+}
+
+.packs-card:hover {
+  border-color: $pack-action;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.packs-card__body {
+  padding: 1.25rem;
+}
+
+.packs-card__row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.packs-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.packs-badge--active {
+  background: #fefce8;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.packs-badge--inactive {
+  background: #f8fafc;
+  color: $pack-muted;
+  border: 1px solid $pack-border;
+}
+
+.packs-menu {
+  position: relative;
+}
+
+.packs-menu__button {
+  width: 1.75rem;
+  height: 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  transition: all 0.15s ease;
+}
+
+.packs-menu__button:hover {
+  background: #f8fafc;
+  color: $pack-text;
+}
+
+.packs-menu__panel {
+  position: absolute;
+  right: 0;
+  margin-top: 0.25rem;
+  width: 11rem;
+  border-radius: 1rem;
+  background: $pack-bg;
+  border: 1px solid $pack-border;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.09);
+  padding: 0.25rem;
+  z-index: 30;
+  animation: menuIn 0.12s cubic-bezier(0.4,0,0.2,1);
+}
+
+@keyframes menuIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.packs-menu__item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.75rem;
+  border-radius: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: $pack-text;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.packs-menu__item:hover {
+  background: #f8fafc;
+}
+
+.packs-menu__item--danger {
+  color: $pack-danger;
+}
+
+.packs-menu__item--warning {
+  color: #d97706;
+}
+
+.packs-form {
+  padding: 1rem 1.25rem;
+}
+
+.packs-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.4);
+  z-index: 50;
+}
+
+.packs-modal__panel {
+  width: 100%;
+  max-width: 42rem;
+  border-radius: 1.5rem;
+  background: $pack-bg;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+.packs-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem;
+  border-bottom: 1px solid $pack-border;
+}
+
+.packs-modal__body {
+  overflow-y: auto;
+  padding: 1.25rem;
+}
+
+.packs-modal__footer {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem 1.5rem;
+}
+
+.packs-btn {
+  border-radius: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.75rem 1rem;
+  border: none;
+  cursor: pointer;
+}
+
+.packs-btn--secondary {
+  background: $pack-bg;
+  color: $pack-text;
+  border: 1px solid $pack-border;
+}
+
+.packs-btn--primary {
+  background: $pack-action;
+  color: $pack-bg;
+}
+
+.packs-btn--primary:hover {
+  background: darken($pack-action, 5%);
+}
+
+.packs-btn--danger {
+  background: $pack-danger;
+  color: $pack-bg;
+}
+
+.packs-input {
+  width: 100%;
+  border: 1px solid $pack-border;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: $pack-text;
+  background: $pack-bg;
+}
+
+.packs-input:focus {
+  outline: none;
+  border-color: $pack-action;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
+}
+
+.packs-textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
