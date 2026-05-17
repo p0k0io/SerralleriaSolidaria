@@ -46,6 +46,7 @@ class OrderSeeder extends Seeder
                 'quantity' => $quantity,
                 'unit_price' => $unitPrice,
                 'status' => 'completed',
+                'installation_requested' => rand(0, 1) === 1,
             ]);
             $total += $quantity * $unitPrice;
         }

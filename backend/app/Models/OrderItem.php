@@ -15,7 +15,12 @@ class OrderItem extends Model
         'product_name',
         'unit_price',
         'status',
-        'price'
+        'price',
+        'installation_requested',
+    ];
+
+    protected $casts = [
+        'installation_requested' => 'boolean',
     ];
 
     protected $with = ['variant', 'pack']; 

@@ -128,23 +128,9 @@ class PaymentController extends Controller
             |--------------------------------------------------------------------------
             */
 
-            $orderItems = collect($cart)->map(function ($item) use ($order) {
-
-                return [
-                    'order_id'     => $order->id,
-                    'variant_id'   => $item['id'] ?? null,
-                    'product_name' => $item['product_name'] ?? 'Producto',
-                    'quantity'     => $item['qty'],
-                    'unit_price'   => $item['price'],
-                    'status'       => 'pending',
-                    'created_at'   => now(),
-                    'updated_at'   => now(),
-                ];
-            })->toArray();
-
-            OrderItem::insert($orderItems);
-
-            Log::info("📦 OrderItems creados");
+            // No insertamos aquí aún: lo hacemos después de crear el payment para
+            // mantener el flujo correcto y evitar duplicados.
+            // Los order items se guardarán en el bloque final con installation_requested.
 
             /*
             |--------------------------------------------------------------------------
@@ -197,14 +183,15 @@ class PaymentController extends Controller
             OrderItem::insert(
                 collect($cart)->map(function ($item) use ($order) {
                     return [
-                        'order_id'     => $order->id,
-                        'variant_id'   => $item['id'] ?? null,
-                        'product_name' => $item['product_name'] ?? 'Producto',
-                        'quantity'     => $item['qty'],
-                        'unit_price'   => $item['price'],         // ← precio unitario, sin multiplicar
-                        'status'       => 'pendiente',
-                        'created_at'   => now(),
-                        'updated_at'   => now(),
+                        'order_id'              => $order->id,
+                        'variant_id'            => $item['id'] ?? null,
+                        'product_name'          => $item['product_name'] ?? 'Producto',
+                        'quantity'              => $item['qty'],
+                        'unit_price'            => $item['price'],         // ← precio unitario, sin multiplicar
+                        'status'                => 'pendiente',
+                        'installation_requested' => $item['installation_requested'] ?? false,
+                        'created_at'            => now(),
+                        'updated_at'            => now(),
                     ];
                 })->toArray()
             );
