@@ -11,133 +11,192 @@ function persistCart(cart) {
   window.dispatchEvent(new Event("cart-updated"))
 }
 
-
-
-function ProductIcon({ name = "", size = 64 }) {
+/* ─── icons ────────────────────────────────────────────────── */
+function ProductIcon({ name = "", size = 96 }) {
   const n = name.toLowerCase()
   const p = {
     xmlns: "http://www.w3.org/2000/svg", width: size, height: size,
     viewBox: "0 0 24 24", fill: "none", stroke: "currentColor",
-    strokeWidth: "1.2", strokeLinecap: "round", strokeLinejoin: "round"
+    strokeWidth: "1", strokeLinecap: "round", strokeLinejoin: "round"
   }
-
   if (n.includes("bomb"))
     return <svg {...p}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
   if (n.includes("escudo"))
     return <svg {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
   if (n.includes("cerradura"))
     return <svg {...p}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/><circle cx="12" cy="16" r="1.5" fill="currentColor"/></svg>
-
   return <svg {...p}><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
 }
 
-function ArrowLeftIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-      fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M19 12H5M12 5l-7 7 7 7"/>
-    </svg>
-  )
-}
+const ArrowLeft = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+    fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M19 12H5M12 5l-7 7 7 7"/>
+  </svg>
+)
+const CheckSm = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
+    fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12"/>
+  </svg>
+)
+const CartIco = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+    fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
+    <path d="M2.05 2.05h2l2.66 12.42a2 2 0 002 1.58h9.78a2 2 0 001.95-1.57l1.65-7.43H5.12"/>
+  </svg>
+)
 
-function CheckIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
-      fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12"/>
-    </svg>
-  )
-}
+/* ─── styles ────────────────────────────────────────────────── */
+const css = `
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap');
+  .pd * { box-sizing: border-box; margin: 0; padding: 0; }
+  .pd {
+    font-family: 'Inter', sans-serif; color: #18150f;
+    max-width: 1080px; margin: 0 auto; padding: 2rem 1.5rem 4rem;
+  }
+  .pd-back {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 500; letter-spacing: 0.04em;
+    color: #a89880; background: none; border: none; cursor: pointer;
+    margin-bottom: 2.5rem; transition: color .2s, gap .2s;
+  }
+  .pd-back:hover { color: #bf5c18; gap: 13px; }
+  .pd-back svg { transition: transform .2s; }
+  .pd-back:hover svg { transform: translateX(-3px); }
+  .pd-grid {
+    display: grid; grid-template-columns: 400px 1fr;
+    gap: 3.5rem; align-items: start;
+  }
+  @media (max-width: 860px) { .pd-grid { grid-template-columns: 1fr; gap: 2rem; } }
 
-function CartIcon({ size = 15 }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24"
-      fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
-      <path d="M2.05 2.05h2l2.66 12.42a2 2 0 002 1.58h9.78a2 2 0 001.95-1.57l1.65-7.43H5.12"/>
-    </svg>
-  )
-}
+  /* hero */
+  .pd-hero {
+    border-radius: 24px; background: #fdf4ea; border: 1px solid #f0dfc8;
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden; color: #e8b070;
+  }
+  .pd-ring {
+    position: absolute; border-radius: 50%; border: 1px solid #f0dac0;
+    top: 50%; left: 50%; transform: translate(-50%,-50%); pointer-events: none;
+  }
+  .pd-hero-badges {
+    position: absolute; bottom: 14px; left: 14px; right: 14px;
+    display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end;
+  }
+  .pd-hero-badge {
+    font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500;
+    background: #bf5c18; color: #fff; padding: 3px 9px; border-radius: 7px;
+  }
 
-function StatBadge({ label, value }) {
-  return (
-    <div className="flex flex-col items-center justify-center bg-orange-50 border border-orange-100 rounded-2xl px-5 py-3 min-w-[80px]">
-      <span className="text-lg font-extrabold text-orange-500">{value}</span>
-      <span className="text-[10px] font-semibold text-orange-300 uppercase tracking-widest mt-0.5">{label}</span>
-    </div>
-  )
-}
+  /* stats — solo 2 ahora */
+  .pd-stats { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin-top: 14px; }
+  .pd-stat {
+    background: #fff; border: 1px solid #ece4d8; border-radius: 14px;
+    padding: 13px 8px; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  .pd-stat-v { font-size: 20px; font-weight: 700; color: #bf5c18; line-height: 1; }
+  .pd-stat-l { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #c0ab98; }
 
+  /* info card */
+  .pd-info {
+    background: #fff; border: 1px solid #ede4d8; border-radius: 20px;
+    padding: 20px; margin-top: 14px;
+  }
+  .pd-info-h { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: #bf5c18; margin-bottom: 10px; }
+  .pd-info-desc { font-size: 13px; color: #5a4e42; line-height: 1.65; margin-bottom: 14px; }
+  .pd-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .pd-chip { border-radius: 12px; padding: 10px 12px; }
+  .pd-chip.w { background: #fdf0e4; border: 1px solid #f5ddc4; }
+  .pd-chip.c { background: #f5f3f0; border: 1px solid #e8e2da; }
+  .pd-chip-l { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 3px; }
+  .pd-chip.w .pd-chip-l { color: #bf7040; }
+  .pd-chip.c .pd-chip-l { color: #9c8f83; }
+  .pd-chip-v { font-size: 13px; font-weight: 600; color: #1a150e; }
+  .pd-attrs-l { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #b0a090; margin-bottom: 8px; }
+  .pd-attrs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pd-attr {
+    font-family: 'DM Mono',monospace; font-size: 11px;
+    background: #f3ede5; color: #6b5a48; padding: 4px 10px;
+    border-radius: 100px; border: 1px solid #e8ddd2;
+  }
 
-function VariantTable({ variants, selected, onSelect, cart }) {
-  return (
-    <div className="overflow-x-auto rounded-2xl border border-slate-100">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-slate-50 border-b border-slate-100">
-        <th className="text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest px-4 py-3">Ref.</th>
-        <th className="text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest px-4 py-3">SKU</th>
-        <th className="text-right text-[10px] font-bold text-slate-400 uppercase tracking-widest px-4 py-3">Precio</th>
-        <th className="text-right text-[10px] font-bold text-slate-400 uppercase tracking-widest px-4 py-3">En carrito</th>
-            <th className="px-4 py-3"/>
-          </tr>
-        </thead>
-        <tbody>
-          {variants.map((v, i) => {
-            const ref = v.sku.split("-").slice(-1)[0]
-            const inCart = cart.find((c) => c.id === v.id)
-            const isSelected = selected?.id === v.id
-            return (
-              <tr
-                key={v.id}
-                onClick={() => onSelect(v)}
-                className={`cursor-pointer transition-colors border-b last:border-b-0 border-slate-50 ${
-                  isSelected ? "bg-orange-50": "hover:bg-slate-50"}`}>
-                <td className="px-4 py-3">
-                  <span className={`font-mono font-bold text-sm ${isSelected ? "text-orange-600" : "text-slate-600"}`}>
-                    {ref}
-                  </span>
-                </td>
-                <td className="px-4 py-3 font-mono text-slate-400 text-xs">{v.sku}</td>
-                <td className="px-4 py-3 text-right font-extrabold text-slate-800">
-                  ${parseFloat(v.price).toFixed(2)}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  {inCart ? (
-                    <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-lg">
-                      <CheckIcon /> {inCart.qty}
-                    </span>
-                  ) : (
-                    <span className="text-slate-300 text-xs">—</span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  {isSelected && (
-                    <span className="text-orange-400">
-                      <CheckIcon />
-                    </span>
-                  )}
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
-  )
-}
+  /* right col */
+  .pd-eye { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; color: #bf5c18; margin-bottom: 6px; }
+  .pd-name { font-size: 32px; font-weight: 700; color: #18150f; line-height: 1.1; margin-bottom: 2rem; }
+  .pd-sec { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: #c0ab98; margin-bottom: 10px; }
+  .pd-pills { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 1.75rem; }
+  .pd-pill {
+    font-family: 'DM Mono',monospace; font-size: 12px; padding: 7px 17px;
+    border-radius: 100px; border: 1.5px solid #ddd6cc; background: #fff; color: #6b5a48;
+    cursor: pointer; position: relative; transition: all .18s;
+  }
+  .pd-pill:hover { border-color: #bf5c18; color: #bf5c18; }
+  .pd-pill.on { background: #bf5c18; border-color: #bf5c18; color: #fff; transform: scale(1.06); }
+  .pd-dot { position: absolute; top: -3px; right: -3px; width: 9px; height: 9px; border-radius: 50%; background: #22c55e; border: 2px solid #fff; }
 
+  /* price strip */
+  .pd-pstrip {
+    background: #fdf4ea; border: 1px solid #f0dfc8; border-radius: 20px;
+    padding: 18px 22px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;
+  }
+  .pd-sku-l { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: #bf8040; margin-bottom: 4px; }
+  .pd-sku-v { font-family: 'DM Mono',monospace; font-size: 12px; color: #7a5c3a; }
+  .pd-price { font-size: 38px; font-weight: 700; color: #bf5c18; line-height: 1; }
 
+  /* actions */
+  .pd-actions { display: flex; gap: 10px; align-items: stretch; margin-bottom: 1.75rem; }
+  .pd-qty { display: flex; align-items: center; border: 1.5px solid #ddd6cc; border-radius: 14px; background: #fff; overflow: hidden; }
+  .pd-qb { width: 42px; height: 52px; background: none; border: none; font-size: 20px; font-weight: 300; color: #a89880; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .15s, color .15s; }
+  .pd-qb:hover { background: #fdf0e4; color: #bf5c18; }
+  .pd-qv { width: 36px; text-align: center; font-size: 15px; font-weight: 600; color: #18150f; user-select: none; }
+  .pd-add {
+    flex: 1; height: 52px; border: none; border-radius: 14px;
+    font-family: 'Inter',sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: all .2s;
+  }
+  .pd-add.idle { background: #bf5c18; color: #fff; }
+  .pd-add.idle:hover { background: #a84e14; }
+  .pd-add.idle:active { transform: scale(0.97); }
+  .pd-add.done { background: #16a34a; color: #fff; transform: scale(0.97); }
+
+  /* table */
+  .pd-tw { border: 1px solid #ede4d8; border-radius: 18px; overflow: hidden; }
+  .pd-t { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .pd-t thead tr { background: #faf7f2; border-bottom: 1px solid #ede4d8; }
+  .pd-t th { padding: 11px 15px; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: #c0ab98; text-align: left; }
+  .pd-t th.r { text-align: right; }
+  .pd-t tbody tr { border-bottom: 1px solid #f5efe8; cursor: pointer; transition: background .12s; }
+  .pd-t tbody tr:last-child { border-bottom: none; }
+  .pd-t tbody tr:hover { background: #fdf4ea; }
+  .pd-t tbody tr.s { background: #fff5e8; }
+  .pd-t td { padding: 13px 15px; }
+  .pd-ref { font-family: 'DM Mono',monospace; font-size: 13px; font-weight: 500; }
+  .pd-ref.s { color: #bf5c18; }
+  .pd-ref.n { color: #5a4e42; }
+  .pd-msm { font-family: 'DM Mono',monospace; font-size: 11px; color: #c0ab98; }
+  .pd-ptd { text-align: right; font-weight: 600; color: #18150f; }
+  .pd-ctd { text-align: right; }
+  .pd-cin { display: inline-flex; align-items: center; gap: 4px; background: #dcfce7; color: #15803d; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 7px; }
+  .pd-std { text-align: right; color: #bf5c18; }
+`
+
+/* ─── component ─────────────────────────────────────────────── */
 export default function ProductDetail({ name, variants, onBack }) {
   const [selected, setSelected] = useState(variants[0])
-  const [qty, setQty] = useState(1)
-  const [cart, setCart] = useState(loadCart)
-  const [addedFeedback, setAddedFeedback] = useState(false)
+  const [qty, setQty]           = useState(1)
+  const [cart, setCart]         = useState(loadCart)
+  const [added, setAdded]       = useState(false)
 
-  const cartItem = cart.find((c) => c.id === selected.id)
+  const cartItem    = cart.find((c) => c.id === selected.id)
   const totalInCart = cart.reduce((sum, c) => sum + c.qty, 0)
-  const lowestPrice = Math.min(...variants.map((v) => parseFloat(v.price)))
-  const highestPrice = Math.max(...variants.map((v) => parseFloat(v.price)))
+
+  const description  = selected.product?.description || "Descripción no disponible."
+  const manufacturer = selected.product?.manufacturer
+  const category     = selected.product?.category?.name
+  const attributes   = selected.attributes || []
 
   function handleAdd() {
     setCart((prev) => {
@@ -148,40 +207,33 @@ export default function ProductDetail({ name, variants, onBack }) {
       persistCart(next)
       return next
     })
-    setAddedFeedback(true)
-    setTimeout(() => setAddedFeedback(false), 1800)
+    setAdded(true)
+    setTimeout(() => setAdded(false), 1800)
   }
 
-  return (
-    <div className="max-w-5xl mx-auto">
+  function pick(v) { setSelected(v); setQty(1) }
 
-      <button
-        onClick={onBack}
-        className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-orange-500 transition-colors mb-6 group"
-      >
-        <span className="group-hover:-translate-x-0.5 transition-transform">
-          <ArrowLeftIcon />
-        </span>
-        Volver a productos
+  return (
+    <div className="pd">
+      <style>{css}</style>
+
+      <button className="pd-back" onClick={onBack}>
+        <ArrowLeft /> Volver a productos
       </button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-
-
-        <div className="lg:col-span-2 flex flex-col gap-4">
-
-          <div className="relative bg-gradient-to-br from-orange-50 to-amber-50 rounded-3xl flex items-center justify-center text-orange-200 h-72 overflow-hidden">
-    
-            <div className="relative text-orange-300">
-              <ProductIcon name={name} size={72} />
-            </div>
-            {/* Variantes en carrito */}
-            <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5 justify-end">
+      <div className="pd-grid">
+        {/* LEFT */}
+        <div>
+          <div className="pd-hero">
+            <div className="pd-ring" style={{ width: 200, height: 200 }} />
+            <div className="pd-ring" style={{ width: 320, height: 320 }} />
+            <ProductIcon name={name} size={100} />
+            <div className="pd-hero-badges">
               {variants.map((v) => {
                 const ci = cart.find((c) => c.id === v.id)
                 if (!ci) return null
                 return (
-                  <span key={v.id} className="text-[11px] bg-orange-500 text-white font-bold px-2 py-1 rounded-lg font-mono shadow-sm">
+                  <span key={v.id} className="pd-hero-badge">
                     {v.sku.split("-").slice(-1)[0]} ×{ci.qty}
                   </span>
                 )
@@ -189,128 +241,135 @@ export default function ProductDetail({ name, variants, onBack }) {
             </div>
           </div>
 
-          {/* Stats row */}
-          <div className="flex gap-2 flex-wrap">
-            <StatBadge label="Variantes" value={variants.length} />
-            <StatBadge
-              label="Precio"
-              value={lowestPrice === highestPrice
-                ? `$${lowestPrice.toFixed(2)}`
-                : `$${lowestPrice.toFixed(0)}–${highestPrice.toFixed(0)}`
-              }
-            />
-            <StatBadge label="En carrito" value={totalInCart} />
+          {/* Stats: solo variantes y carrito */}
+          <div className="pd-stats">
+            <div className="pd-stat">
+              <span className="pd-stat-v">{variants.length}</span>
+              <span className="pd-stat-l">Variantes</span>
+            </div>
+            <div className="pd-stat">
+              <span className="pd-stat-v">{totalInCart}</span>
+              <span className="pd-stat-l">En carrito</span>
+            </div>
           </div>
 
           {/* Info card */}
-          <div className="bg-white border border-slate-100 rounded-2xl p-4 text-sm text-slate-500 leading-relaxed">
-            <p className="font-semibold text-slate-700 mb-1 text-sm">Sobre este producto</p>
-            <p className="text-slate-400 text-xs">
-              Selecciona una variante de la tabla o usa los botones de color para ver precio y SKU.
-              Ajusta la cantidad y añade al carrito.
-            </p>
+          <div className="pd-info">
+            <p className="pd-info-h">Sobre este producto</p>
+            <p className="pd-info-desc">{description}</p>
+            {(manufacturer || category) && (
+              <div className="pd-meta">
+                {manufacturer && (
+                  <div className="pd-chip w">
+                    <p className="pd-chip-l">Fabricante</p>
+                    <p className="pd-chip-v">{manufacturer}</p>
+                  </div>
+                )}
+                {category && (
+                  <div className="pd-chip c">
+                    <p className="pd-chip-l">Categoría</p>
+                    <p className="pd-chip-v">{category}</p>
+                  </div>
+                )}
+              </div>
+            )}
+            {attributes.length > 0 && (
+              <>
+                <p className="pd-attrs-l">Atributos</p>
+                <div className="pd-attrs">
+                  {attributes.map((a, i) => (
+                    <span key={i} className="pd-attr">{a.type}: {a.value}</span>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
-        <div className="lg:col-span-3 flex flex-col gap-6">
+        {/* RIGHT */}
+        <div>
+          <p className="pd-eye">Producto</p>
+          <h1 className="pd-name">{name}</h1>
 
-          {/* Nombre */}
-          <div>
-            <p className="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-1">Producto</p>
-            <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight leading-tight">{name}</h1>
+          <p className="pd-sec">Variante</p>
+          <div className="pd-pills">
+            {variants.map((v) => {
+              const ref    = v.sku.split("-").slice(-1)[0]
+              const inCart = cart.find((c) => c.id === v.id)
+              const on     = selected.id === v.id
+              return (
+                <button key={v.id} className={`pd-pill${on ? " on" : ""}`} onClick={() => pick(v)}>
+                  {ref}
+                  {inCart && !on && <span className="pd-dot" />}
+                </button>
+              )
+            })}
           </div>
 
-          <div>
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Variante seleccionada</p>
-            <div className="flex flex-wrap gap-2">
-              {variants.map((v) => {
-                const ref = v.sku.split("-").slice(-1)[0]
-                const inCart = cart.find((c) => c.id === v.id)
-                const isActive = selected.id === v.id
-                return (
-                  <button
-                    key={v.id}
-                    onClick={() => { setSelected(v); setQty(1) }}
-                    className={`relative text-sm font-mono px-4 py-2 rounded-xl border-2 transition-all ${
-                      isActive
-                        ? "bg-orange-500 border-orange-500 text-white shadow-md scale-105"
-                        : "bg-white border-slate-200 text-slate-600 hover:border-orange-300 hover:text-orange-500"
-                    }`}
-                  >
-                    {ref}
-                    {inCart && !isActive && (
-                      <span className="absolute -top-1.5 -right-1.5 w-2.5 h-2.5 rounded-full bg-green-400 border-2 border-white shadow" />
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          <div className="bg-slate-50 rounded-2xl px-5 py-4 flex items-center justify-between">
+          <div className="pd-pstrip">
             <div>
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">SKU</p>
-              <p className="font-mono text-slate-600 text-sm mt-0.5">{selected.sku}</p>
+              <p className="pd-sku-l">SKU</p>
+              <p className="pd-sku-v">{selected.sku}</p>
             </div>
-            <div className="text-right">
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Precio unitario</p>
-              <p className="text-3xl font-extrabold text-orange-500 mt-0.5">
-                ${parseFloat(selected.price).toFixed(2)}
-              </p>
+            <div style={{ textAlign: "right" }}>
+              <p className="pd-sku-l">Precio unitario</p>
+              <div className="pd-price">${parseFloat(selected.price).toFixed(2)}</div>
             </div>
           </div>
 
-
-          <div className="flex items-center gap-3">
-
-            <div className="flex items-center border-2 border-slate-200 rounded-xl overflow-hidden">
-              <button
-                onClick={() => setQty((q) => Math.max(1, q - 1))}
-                className="w-11 h-12 flex items-center justify-center text-slate-400 hover:bg-orange-50 hover:text-orange-500 transition-colors text-xl font-light"
-              >−</button>
-              <span className="w-10 text-center text-base font-bold text-slate-700 select-none">{qty}</span>
-              <button
-                onClick={() => setQty((q) => q + 1)}
-                className="w-11 h-12 flex items-center justify-center text-slate-400 hover:bg-orange-50 hover:text-orange-500 transition-colors text-xl font-light"
-              >+</button>
+          <div className="pd-actions">
+            <div className="pd-qty">
+              <button className="pd-qb" onClick={() => setQty((q) => Math.max(1, q - 1))}>−</button>
+              <span className="pd-qv">{qty}</span>
+              <button className="pd-qb" onClick={() => setQty((q) => q + 1)}>+</button>
             </div>
-
-  
-            <button
-              onClick={handleAdd}
-              className={`flex-1 flex items-center justify-center gap-2 text-white text-sm font-bold py-3.5 rounded-xl transition-all ${
-                addedFeedback
-                  ? "bg-green-500 scale-95"
-                  : "bg-orange-500 hover:bg-orange-600 active:scale-95"
-              }`}
-            >
-              {addedFeedback ? (
-                <>
-                  <CheckIcon /> ¡Añadido!
-                </>
-              ) : (
-                <>
-                  <CartIcon />
-                  {cartItem
-                    ? `Añadir más · ${cartItem.qty} en carrito`
-                    : `Añadir al carrito · $${(parseFloat(selected.price) * qty).toFixed(2)}`
-                  }
-                </>
-              )}
+            <button className={`pd-add ${added ? "done" : "idle"}`} onClick={handleAdd}>
+              {added
+                ? <><CheckSm /> ¡Añadido!</>
+                : <>
+                    <CartIco />
+                    {cartItem
+                      ? `Añadir más · ${cartItem.qty} en carrito`
+                      : `Añadir · $${(parseFloat(selected.price) * qty).toFixed(2)}`
+                    }
+                  </>
+              }
             </button>
           </div>
 
-          {/* Tabla de variantes */}
-          <div>
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">
-              Todas las variantes
-            </p>
-            <VariantTable
-              variants={variants}
-              selected={selected}
-              onSelect={(v) => { setSelected(v); setQty(1) }}
-              cart={cart}
-            />
+          <div style={{ marginTop: "0.25rem" }}>
+            <p className="pd-sec" style={{ marginBottom: "10px" }}>Todas las variantes</p>
+            <div className="pd-tw">
+              <table className="pd-t">
+                <thead>
+                  <tr>
+                    <th>Ref.</th><th>SKU</th>
+                    <th className="r">Precio</th><th className="r">Carrito</th><th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {variants.map((v) => {
+                    const ref    = v.sku.split("-").slice(-1)[0]
+                    const inCart = cart.find((c) => c.id === v.id)
+                    const isSel  = selected?.id === v.id
+                    return (
+                      <tr key={v.id} className={isSel ? "s" : ""} onClick={() => pick(v)}>
+                        <td><span className={`pd-ref ${isSel ? "s" : "n"}`}>{ref}</span></td>
+                        <td><span className="pd-msm">{v.sku}</span></td>
+                        <td className="pd-ptd">${parseFloat(v.price).toFixed(2)}</td>
+                        <td className="pd-ctd">
+                          {inCart
+                            ? <span className="pd-cin"><CheckSm /> {inCart.qty}</span>
+                            : <span style={{ color: "#ddd", fontSize: "12px" }}>—</span>
+                          }
+                        </td>
+                        <td className="pd-std">{isSel && <CheckSm />}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
