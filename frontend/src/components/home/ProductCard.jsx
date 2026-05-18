@@ -1,6 +1,4 @@
 import { useState } from "react"
-import axios from "axios"
-
 import { persistCart } from "./cartUtils"
 import { ProductIcon, EyeIcon, CartIcon } from "./icons"
 import StockBadge from "./StockBadge"
@@ -14,50 +12,42 @@ export default function ProductCard({
   compact,
   onViewDetail,
 }) {
-
   const [selected, setSelected] = useState(variants[0])
-  const [qty, setQty] = useState(1)
+  const [qty, setQty]           = useState(1)
 
-  const cartItem = cart.find((c) => c.id === selected.id)
-
-  const product = selected.product
-  const isPack                  = Boolean(selected.pack)
-
+  const cartItem  = cart.find((c) => c.id === selected.id)
+  const product   = selected.product
+  const isPack    = Boolean(selected.pack)
   const isUnavailable = selected.stock_status === "out_of_stock"
+
+  // Imagen real: el backend devuelve image_url (URL absoluta) o null
+  const imageUrl = selected.image_url ?? selected.image ?? null
 
   /*
   |--------------------------------------------------------------------------
   | Guardar carrito en backend
   |--------------------------------------------------------------------------
   */
-
   async function saveCartToDatabase(item) {
-
     try {
-
       const token = localStorage.getItem("token")
-
       if (!token) return
 
-      await axios.post(
-        `http://localhost:8000/api/cart`,
-        {
-          variant_id: item.id,
-          sku: item.sku,
-          product_name: item.product_name,
-          price: item.price,
-          qty: item.qty,
-          installation_requested: item.installation_requested,
+      await fetch("http://localhost:8000/api/cart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
-
+        body: JSON.stringify({
+          variant_id:   item.id,
+          sku:          item.sku,
+          product_name: item.product_name,
+          price:        item.price,
+          qty:          item.qty,
+        }),
+      })
     } catch (error) {
-
       console.error("Error guardando carrito", error)
     }
   }
@@ -67,35 +57,26 @@ export default function ProductCard({
   | Añadir al carrito
   |--------------------------------------------------------------------------
   */
-
   async function handleAdd(e) {
-
     e.stopPropagation()
 
-    const existing = cart.find((c) => c.id === selected.id)
     const item = {
-      id: selected.id,
-      sku: selected.sku,
+      id:           selected.id,
+      sku:          selected.sku,
       product_name: name,
-      price: selected.price,
+      price:        selected.price,
       qty,
-      installation_requested: existing?.installation_requested ?? false,
     }
 
-    setCart(prev => {
-
-      const existing = prev.find(c => c.id === selected.id)
-
+    setCart((prev) => {
+      const existing = prev.find((c) => c.id === selected.id)
       const next = existing
-        ? prev.map(c =>
-            c.id === selected.id
-              ? { ...c, qty: c.qty + qty }
-              : c
+        ? prev.map((c) =>
+            c.id === selected.id ? { ...c, qty: c.qty + qty } : c
           )
         : [...prev, item]
 
       persistCart(next)
-
       return next
     })
 
@@ -106,20 +87,20 @@ export default function ProductCard({
     <div
       className="group relative bg-white rounded-2xl flex flex-col overflow-hidden transition-all duration-300 hover:-translate-y-0.5"
       style={{
-        border: "1px solid rgba(226,232,240,0.7)",
-        boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.03)",
+        border:     "1px solid rgba(226,232,240,0.7)",
+        boxShadow:  "0 1px 2px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.03)",
       }}
-      onMouseEnter={e => {
-        e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04)"
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow  = "0 4px 16px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04)"
         e.currentTarget.style.borderColor = "rgba(203,213,225,0.9)"
       }}
-      onMouseLeave={e => {
-        e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.03)"
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow  = "0 1px 2px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.03)"
         e.currentTarget.style.borderColor = "rgba(226,232,240,0.7)"
       }}
     >
 
-      {/* Image / placeholder area */}
+      {/* ── Image area ── */}
       <div
         className={`relative overflow-hidden cursor-pointer ${compact ? "h-36" : "h-48"}`}
         style={{
@@ -127,7 +108,7 @@ export default function ProductCard({
         }}
         onClick={() => onViewDetail(name, variants)}
       >
-        {/* Noise grain — ultra subtle */}
+        {/* Grain */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -137,8 +118,25 @@ export default function ProductCard({
           }}
         />
 
-        {/* Icon */}
-        <div className="absolute inset-0 flex items-center justify-center">
+        {/* ── IMAGEN REAL o FALLBACK ── */}
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={name}
+            className="absolute inset-0 w-full h-full object-contain p-3 transition-transform duration-500 group-hover:scale-105"
+            onError={(e) => {
+              // Si la imagen falla, mostramos el fallback ocultando el img
+              e.currentTarget.style.display = "none"
+              e.currentTarget.nextSibling.style.display = "flex"
+            }}
+          />
+        ) : null}
+
+        {/* Fallback — icono genérico (siempre en DOM, oculto si hay imagen) */}
+        <div
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ display: imageUrl ? "none" : "flex" }}
+        >
           <span className="text-orange-200/70 transition-transform duration-500 group-hover:scale-105">
             <ProductIcon name={name} size={compact ? 26 : 34} />
           </span>
@@ -156,11 +154,14 @@ export default function ProductCard({
 
         {/* Cart in-cart indicator */}
         <div className="absolute bottom-2 left-0 right-0 flex flex-wrap gap-1 justify-center px-2">
-          {variants.map(v => {
-            const ci = cart.find(c => c.id === v.id)
+          {variants.map((v) => {
+            const ci = cart.find((c) => c.id === v.id)
             if (!ci) return null
             return (
-              <span key={v.id} className="text-[10px] bg-orange-500 text-white font-bold px-1.5 py-0.5 rounded-md font-mono shadow-sm">
+              <span
+                key={v.id}
+                className="text-[10px] bg-orange-500 text-white font-bold px-1.5 py-0.5 rounded-md font-mono shadow-sm"
+              >
                 {(v.sku ?? "").split("-").slice(-1)[0]} ×{ci.qty}
               </span>
             )
@@ -175,7 +176,7 @@ export default function ProductCard({
         </div>
       </div>
 
-      {/* Body */}
+      {/* ── Body ── */}
       <div className={`flex flex-col flex-1 ${compact ? "p-3 gap-2" : "p-4 gap-3"}`}>
 
         <div className="flex items-start justify-between gap-2">
@@ -211,8 +212,8 @@ export default function ProductCard({
         <div>
           <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-2">Variante</p>
           <div className="flex flex-wrap gap-1.5">
-            {variants.map(v => {
-              const inCart   = cart.find(c => c.id === v.id)
+            {variants.map((v) => {
+              const inCart   = cart.find((c) => c.id === v.id)
               const isActive = selected.id === v.id
               const unavail  = v.stock_status === "out_of_stock"
               return (
@@ -228,8 +229,12 @@ export default function ProductCard({
                   }`}
                 >
                   {(v.sku ?? "—").split("-").slice(-1)[0]}
-                  {inCart && !isActive && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 border-2 border-white" />}
-                  {unavail && !isActive && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-400 border-2 border-white" />}
+                  {inCart && !isActive && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 border-2 border-white" />
+                  )}
+                  {unavail && !isActive && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-400 border-2 border-white" />
+                  )}
                 </button>
               )
             })}
@@ -247,10 +252,23 @@ export default function ProductCard({
 
         {/* Add to cart */}
         <div className="flex items-center gap-2 pt-3 border-t border-slate-100/80">
-          <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden shrink-0" style={{ background: "rgba(248,250,252,0.8)" }}>
-            <button onClick={e => { e.stopPropagation(); setQty(q => Math.max(1, q - 1)) }} className="w-8 h-9 flex items-center justify-center text-slate-400 hover:bg-orange-50 hover:text-orange-500 transition-colors text-base">−</button>
+          <div
+            className="flex items-center border border-slate-200 rounded-xl overflow-hidden shrink-0"
+            style={{ background: "rgba(248,250,252,0.8)" }}
+          >
+            <button
+              onClick={(e) => { e.stopPropagation(); setQty((q) => Math.max(1, q - 1)) }}
+              className="w-8 h-9 flex items-center justify-center text-slate-400 hover:bg-orange-50 hover:text-orange-500 transition-colors text-base"
+            >
+              −
+            </button>
             <span className="w-7 text-center text-sm font-bold text-slate-700 select-none">{qty}</span>
-            <button onClick={e => { e.stopPropagation(); setQty(q => q + 1) }} className="w-8 h-9 flex items-center justify-center text-slate-400 hover:bg-orange-50 hover:text-orange-500 transition-colors text-base">+</button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setQty((q) => q + 1) }}
+              className="w-8 h-9 flex items-center justify-center text-slate-400 hover:bg-orange-50 hover:text-orange-500 transition-colors text-base"
+            >
+              +
+            </button>
           </div>
           <button
             onClick={handleAdd}

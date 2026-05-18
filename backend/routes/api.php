@@ -14,10 +14,9 @@ use App\Http\Controllers\Api\RequestController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\OrderItemsController;
 use App\Http\Controllers\CartController;
-
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PaymentController;
-
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SqlController;
 
@@ -27,170 +26,32 @@ use App\Http\Controllers\SqlController;
 |--------------------------------------------------------------------------
 */
 
-Route::get('/test', function () {
-    return response()->json([
-        'status'  => 'ok',
-        'message' => 'API funcionando correctamente',
-    ]);
-});
+Route::get('/test', fn () => response()->json([
+    'status'  => 'ok',
+    'message' => 'API funcionando correctamente',
+]));
 
 /*
 |--------------------------------------------------------------------------
-| PRODUCTS
-|--------------------------------------------------------------------------
-*/
-
-Route::get('/products', [ProductController::class, 'index']);
-Route::get('/products/featured', [ProductController::class, 'featured']);
-Route::get('/products/search', [ProductController::class, 'search']);
-Route::get('/products/{id}', [ProductController::class, 'show']);
-Route::post('/products', [ProductController::class, 'store']);
-Route::post('/products/products-with-variants', [ProductController::class, 'storeWithVariants']);
-Route::put('/products/{id}', [ProductController::class, 'update']);
-Route::delete('/products/{id}', [ProductController::class, 'destroy']);
-Route::post('/products/enable/{id}', [ProductController::class, 'enable']);
-Route::post('/products/disable/{id}', [ProductController::class, 'disable']);
-Route::post('/products/{id}/variants', [ProductController::class, 'addVariant']);
-
-/*
-|--------------------------------------------------------------------------
-| REQUESTS
-|--------------------------------------------------------------------------
-*/
-
-Route::get('/requests', [RequestController::class, 'index']);
-Route::post('/requests', [RequestController::class, 'store']);
-Route::get('/requests/{id}', [RequestController::class, 'show']);
-Route::delete('/requests/{id}', [RequestController::class, 'destroy']);
-Route::get('/requests/status/{status}', [RequestController::class, 'filterByStatus']);
-Route::get('/requests/date-range', [RequestController::class, 'filterByDateRange']);
-Route::get('/requests/search', [RequestController::class, 'searchByCustomerName']);
-Route::get('/requests/summary', [RequestController::class, 'summaryByStatus']);
-Route::get('/requests/{id}/pdf', [RequestController::class, 'generatePdf']);
-Route::get('/requests/{id}/email', [RequestController::class, 'sendEmailNotification']);
-
-/*
-|--------------------------------------------------------------------------
-| VARIANTS
-|--------------------------------------------------------------------------
-*/
-
-Route::prefix('variants')->group(function () {
-    Route::get('/active', [VariantController::class, 'getActiveVariants']);
-    Route::get('/search', [VariantController::class, 'search']);
-    Route::get('/', [VariantController::class, 'index']);
-    Route::post('/', [VariantController::class, 'store']);
-    Route::get('/{id}', [VariantController::class, 'show']);
-    Route::put('/{id}', [VariantController::class, 'update']);
-    Route::delete('/{id}', [VariantController::class, 'destroy']);
-    Route::post('/enable/{id}', [VariantController::class, 'enable']);
-    Route::post('/disable/{id}', [VariantController::class, 'disable']);
-    Route::post('/{id}/toggle', [VariantController::class, 'toggleActive']);
-    Route::post('/{id}/toggle-featured', [VariantController::class, 'toggleFeatured']);
-    Route::patch('/{id}/stock', [VariantController::class, 'updateStock']);
-});
-
-/*
-|--------------------------------------------------------------------------
-| CATEGORIES
-|--------------------------------------------------------------------------
-*/
-
-Route::prefix('categories')->group(function () {
-    Route::get('/', [CategoryController::class, 'index']);
-    Route::get('/{id}', [CategoryController::class, 'show']);
-    Route::post('/', [CategoryController::class, 'store']);
-    Route::put('/{id}', [CategoryController::class, 'update']);
-    Route::delete('/{id}', [CategoryController::class, 'destroy']);
-});
-
-
-
-/*
-|--------------------------------------------------------------------------
-| PACKS
-|--------------------------------------------------------------------------
-*/
-
-Route::apiResource('packs', PackController::class);
-Route::post('/packs/enable/{id}', [PackController::class, 'enable']);
-Route::post('/packs/disable/{id}', [PackController::class, 'disable']);
-
-/*
-|--------------------------------------------------------------------------
-| ATTRIBUTES
-|--------------------------------------------------------------------------
-*/
-
-Route::prefix('attributes')->group(function () {
-    Route::get('/', [AttributeTypeController::class, 'index']);
-    Route::post('/', [AttributeTypeController::class, 'store']);
-    Route::get('/{id}', [AttributeTypeController::class, 'show']);
-    Route::put('/{id}', [AttributeTypeController::class, 'update']);
-    Route::delete('/{id}', [AttributeTypeController::class, 'destroy']);
-    Route::post('/values', [AttributeValueController::class, 'store']);
-    Route::put('/values/{id}', [AttributeValueController::class, 'update']);
-    Route::delete('/values/{id}', [AttributeValueController::class, 'destroy']);
-});
-
-/*
-|--------------------------------------------------------------------------
-| ORDERS — rutas públicas
-| IMPORTANTE: las rutas con segmento estático (/prepared, /track, /my)
-| deben ir ANTES de las rutas con parámetros dinámicos (/{id})
-| para que Laravel no las interprete como un {id}.
-|--------------------------------------------------------------------------
-*/
-
-Route::prefix('orders')->group(function () {
-
-    // Fulfillment — pedidos listos para envío (público o proteger con role:admin si prefieres)
-    Route::get('/prepared', [OrderController::class, 'getPreparedOrders']);
-
-    // Tracking público — el cliente busca por código TRK-XXXXXXXX (sin auth)
-    Route::get('/track/{tracking}', [OrderController::class, 'track']);
-});
-
-/*
-|--------------------------------------------------------------------------
-| DASHBOARD
-|--------------------------------------------------------------------------
-*/
-
-Route::get('/dashboard', [DashboardController::class, 'index']);
-Route::get('/dashboard/monthly-sales', [DashboardController::class, 'monthlySales']);
-Route::get('/dashboard/daily-sales', [DashboardController::class, 'dailySales']);
-Route::get('/dashboard/hourly-sales', [DashboardController::class, 'hourlySales']);
-
-/*
-|--------------------------------------------------------------------------
-| SQL (CUIDADO EN PRODUCCIÓN)
-|--------------------------------------------------------------------------
-*/
-
-Route::post('/execute-sql', [SqlController::class, 'execute']);
-
-/*
-|--------------------------------------------------------------------------
-| AUTH
+| AUTH (público)
 |--------------------------------------------------------------------------
 */
 
 Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login',    [AuthController::class, 'login']);
 
 /*
 |--------------------------------------------------------------------------
-| STRIPE / CHECKOUT (público)
+| STRIPE / WEBHOOKS (público — Stripe no manda token Bearer)
 |--------------------------------------------------------------------------
 */
 
 Route::get('/stripe/session/{id}', [PaymentController::class, 'checkSession']);
-Route::post('/stripe/webhook', [PaymentController::class, 'stripeWebhook']);
+Route::post('/stripe/webhook',     [PaymentController::class, 'stripeWebhook']);
 
 /*
 |--------------------------------------------------------------------------
-| SEGUIMIENTO DE PEDIDO (público — el cliente busca por TRK-XXXXXXXX)
+| TRACKING DE PEDIDO (público — el cliente busca por TRK-XXXXXXXX)
 |--------------------------------------------------------------------------
 */
 
@@ -198,59 +59,145 @@ Route::get('/orders/track/{tracking}', [OrderController::class, 'track']);
 
 /*
 |--------------------------------------------------------------------------
-| PROTECTED ROUTES (SANCTUM)
+| CATÁLOGO — lectura pública
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/products',               [ProductController::class, 'index']);
+Route::get('/products/featured',      [ProductController::class, 'featured']);
+Route::get('/products/search',        [ProductController::class, 'search']);
+Route::get('/products/{id}',          [ProductController::class, 'show']);
+
+Route::prefix('variants')->group(function () {
+    Route::get('/active',  [VariantController::class, 'getActiveVariants']);
+    Route::get('/search',  [VariantController::class, 'search']);
+    Route::get('/',        [VariantController::class, 'index']);
+    Route::get('/{id}',    [VariantController::class, 'show']);
+});
+
+Route::prefix('categories')->group(function () {
+    Route::get('/',      [CategoryController::class, 'index']);
+    Route::get('/{id}',  [CategoryController::class, 'show']);
+});
+
+Route::prefix('attributes')->group(function () {
+    Route::get('/',      [AttributeTypeController::class, 'index']);
+    Route::get('/{id}',  [AttributeTypeController::class, 'show']);
+});
+
+Route::apiResource('packs', PackController::class)->only(['index', 'show']);
+
+// Solicitudes — cualquiera puede enviar una (formulario público)
+Route::post('/requests', [RequestController::class, 'store']);
+
+/*
+|--------------------------------------------------------------------------
+| RUTAS PROTEGIDAS — usuario autenticado (cualquier rol)
 |--------------------------------------------------------------------------
 */
 
 Route::middleware('auth:sanctum')->group(function () {
 
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    });
-
+    Route::get('/user',    fn (Request $r) => $r->user());
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/checkout', [PaymentController::class, 'checkout']);
 
-    // ── Order items ───────────────────────────────────────────────────────────
-    Route::get('/orders/{order}/items', [OrderItemsController::class, 'index']);
-    Route::get('/orders/{order}/items/{item}', [OrderItemsController::class, 'show']);
-    Route::delete('/orders/{order}/items/{item}', [OrderItemsController::class, 'destroy']);
-    Route::patch('/orders/{order}/items/{item}/status', [OrderItemsController::class, 'updateStatus']);
-    Route::patch('/orders/{order}/items/status/bulk', [OrderItemsController::class, 'bulkUpdateStatus']);
+    // Perfil
+    Route::get('/profile',          [ProfileController::class, 'show']);
+    Route::put('/profile',          [ProfileController::class, 'update']);
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
 
-    // ── MIS PEDIDOS (cliente autenticado) ─────────────────────────────────────
-    // Lista resumida de pedidos propios — consume MyOrders.jsx
-    Route::get('/orders/my', [OrderController::class, 'myOrders']);
+    // Carrito
+    Route::get('/cart',          [CartController::class, 'index']);
+    Route::post('/cart',         [CartController::class, 'store']);
+    Route::put('/cart/{id}',     [CartController::class, 'update']);
+    Route::delete('/cart/{id}',  [CartController::class, 'destroy']);
+    Route::delete('/cart-clear', [CartController::class, 'clear']);
 
-    // Detalle de un pedido propio con scope user_id — consume el modal de MyOrders.jsx
-    // IMPORTANTE: esta ruta debe ir antes de /orders/{id} para que Laravel
-    // no interprete "my" como un {id} numérico (en este caso no hay conflicto
-    // porque "my" no es numérico, pero se documenta por claridad).
+    // Mis pedidos (cliente)
+    Route::get('/orders/my',      [OrderController::class, 'myOrders']);
     Route::get('/orders/my/{id}', [OrderController::class, 'myOrderDetail']);
 
-    // ── ADMIN ─────────────────────────────────────────────────────────────────
-    Route::prefix('admin')->group(function () {
-        Route::get('/orders', [OrderController::class, 'index']);
-        Route::get('/orders/{id}', [OrderController::class, 'show']);
-        Route::put('/orders/{id}', [OrderController::class, 'update']);
-        Route::delete('/orders/{id}', [OrderController::class, 'destroy']);
+    // Order items — el cliente puede ver los suyos
+    Route::get('/orders/{order}/items',        [OrderItemsController::class, 'index']);
+    Route::get('/orders/{order}/items/{item}', [OrderItemsController::class, 'show']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | RUTAS ADMIN — requiere auth:sanctum + role === admin
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware('admin')->prefix('admin')->group(function () {
+
+        // Dashboard
+        Route::get('/dashboard',               [DashboardController::class, 'index']);
+        Route::get('/dashboard/monthly-sales', [DashboardController::class, 'monthlySales']);
+        Route::get('/dashboard/daily-sales',   [DashboardController::class, 'dailySales']);
+        Route::get('/dashboard/hourly-sales',  [DashboardController::class, 'hourlySales']);
+
+        // Productos (escritura)
+        Route::post('/products',                        [ProductController::class, 'store']);
+        Route::post('/products/products-with-variants', [ProductController::class, 'storeWithVariants']);
+        Route::put('/products/{id}',                    [ProductController::class, 'update']);
+        Route::delete('/products/{id}',                 [ProductController::class, 'destroy']);
+        Route::post('/products/enable/{id}',            [ProductController::class, 'enable']);
+        Route::post('/products/disable/{id}',           [ProductController::class, 'disable']);
+        Route::post('/products/{id}/variants',          [ProductController::class, 'addVariant']);
+        Route::post('/enhance-image',                   [ProductController::class, 'enhanceImage']);
+
+        // Variantes (escritura)
+        Route::post('/variants',                      [VariantController::class, 'store']);
+        Route::put('/variants/{id}',                  [VariantController::class, 'update']);
+        Route::delete('/variants/{id}',               [VariantController::class, 'destroy']);
+        Route::post('/variants/enable/{id}',          [VariantController::class, 'enable']);
+        Route::post('/variants/disable/{id}',         [VariantController::class, 'disable']);
+        Route::post('/variants/{id}/toggle',          [VariantController::class, 'toggleActive']);
+        Route::post('/variants/{id}/toggle-featured', [VariantController::class, 'toggleFeatured']);
+        Route::patch('/variants/{id}/stock',          [VariantController::class, 'updateStock']);
+
+        // Categorías (escritura)
+        Route::post('/categories',        [CategoryController::class, 'store']);
+        Route::put('/categories/{id}',    [CategoryController::class, 'update']);
+        Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
+
+        // Packs (escritura)
+        Route::post('/packs',             [PackController::class, 'store']);
+        Route::put('/packs/{id}',         [PackController::class, 'update']);
+        Route::delete('/packs/{id}',      [PackController::class, 'destroy']);
+        Route::post('/packs/enable/{id}', [PackController::class, 'enable']);
+        Route::post('/packs/disable/{id}',[PackController::class, 'disable']);
+
+        // Atributos (escritura)
+        Route::post('/attributes',              [AttributeTypeController::class, 'store']);
+        Route::put('/attributes/{id}',          [AttributeTypeController::class, 'update']);
+        Route::delete('/attributes/{id}',       [AttributeTypeController::class, 'destroy']);
+        Route::post('/attributes/values',       [AttributeValueController::class, 'store']);
+        Route::put('/attributes/values/{id}',   [AttributeValueController::class, 'update']);
+        Route::delete('/attributes/values/{id}',[AttributeValueController::class, 'destroy']);
+
+        // Solicitudes (gestión)
+        Route::get('/requests',                   [RequestController::class, 'index']);
+        Route::get('/requests/{id}',              [RequestController::class, 'show']);
+        Route::delete('/requests/{id}',           [RequestController::class, 'destroy']);
+        Route::get('/requests/status/{status}',   [RequestController::class, 'filterByStatus']);
+        Route::get('/requests/date-range',        [RequestController::class, 'filterByDateRange']);
+        Route::get('/requests/search',            [RequestController::class, 'searchByCustomerName']);
+        Route::get('/requests/summary',           [RequestController::class, 'summaryByStatus']);
+        Route::get('/requests/{id}/pdf',          [RequestController::class, 'generatePdf']);
+        Route::get('/requests/{id}/email',        [RequestController::class, 'sendEmailNotification']);
+
+        // Órdenes (gestión completa)
+        Route::get('/orders',                               [OrderController::class, 'index']);
+        Route::get('/orders/prepared',                      [OrderController::class, 'getPreparedOrders']);
+        Route::get('/orders/{id}',                          [OrderController::class, 'show']);
+        Route::put('/orders/{id}',                          [OrderController::class, 'update']);
+        Route::delete('/orders/{id}',                       [OrderController::class, 'destroy']);
+        Route::delete('/orders/{order}/items/{item}',       [OrderItemsController::class, 'destroy']);
+        Route::patch('/orders/{order}/items/{item}/status', [OrderItemsController::class, 'updateStatus']);
+        Route::patch('/orders/{order}/items/status/bulk',   [OrderItemsController::class, 'bulkUpdateStatus']);
+
+        // SQL (solo admin — cuidado en producción)
+        Route::post('/execute-sql', [SqlController::class, 'execute']);
     });
-
-
-    Route::post('/enhance-image', [ProductController::class, 'enhanceImage']);
-    
-
-    Route::middleware('auth:sanctum')->group(function () {
-
-    Route::get('/cart', [CartController::class, 'index']);
-
-    Route::post('/cart', [CartController::class, 'store']);
-
-    Route::put('/cart/{id}', [CartController::class, 'update']);
-
-    Route::delete('/cart/{id}', [CartController::class, 'destroy']);
-
-    Route::delete('/cart-clear', [CartController::class, 'clear']);
-});
-
 });

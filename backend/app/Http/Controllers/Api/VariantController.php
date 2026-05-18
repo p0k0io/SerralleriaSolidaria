@@ -23,6 +23,7 @@ class VariantController extends Controller
             'active'       => $variant->active,
             'featured'     => $variant->destacado,
             'image'        => $variant->image,
+            'image_url' => $variant->image_url,
             'stock_status' => $variant->stock_status,
             'display'      => ($variant->product->name ?? 'Producto') . ' — SKU: ' . ($variant->sku ?? 'N/A'),
             'product'      => $variant->product ?? null,

@@ -23,7 +23,7 @@ export default function FeaturedCard({ variant, cart, setCart, onViewDetail }) {
     })
   }
 
-  const imageUrl = variant.image || product?.image || null
+  const imageUrl = variant.image_url ?? null
   const isFeatured = variant.featured ?? variant.destacado
 
   return (
