@@ -1,4 +1,9 @@
 import { useState } from "react"
+<<<<<<< Updated upstream
+=======
+
+
+>>>>>>> Stashed changes
 import { persistCart } from "./cartUtils"
 import { ProductIcon, EyeIcon, CartIcon } from "./icons"
 import StockBadge from "./StockBadge"

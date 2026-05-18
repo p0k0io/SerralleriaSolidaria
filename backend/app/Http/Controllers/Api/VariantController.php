@@ -4,13 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Variant;
 use App\Models\Pack;
 
 class VariantController extends Controller
 {
     // -------------------------------------------------------------------------
-    // Helper
+    // Helper — formatear variante para el frontend
     // -------------------------------------------------------------------------
 
     private function formatVariant(Variant $variant): array
@@ -22,8 +23,13 @@ class VariantController extends Controller
             'price'        => $variant->price,
             'active'       => $variant->active,
             'featured'     => $variant->destacado,
+<<<<<<< Updated upstream
             'image'        => $variant->image,
             'image_url' => $variant->image_url,
+=======
+            'image'        => $variant->image,          // ruta relativa (para uso interno)
+            'image_url'    => $variant->image_url,      // URL absoluta lista para <img>
+>>>>>>> Stashed changes
             'stock_status' => $variant->stock_status,
             'display'      => ($variant->product->name ?? 'Producto') . ' — SKU: ' . ($variant->sku ?? 'N/A'),
             'product'      => $variant->product ?? null,
@@ -50,6 +56,7 @@ class VariantController extends Controller
             'active'          => $pack->active,
             'featured'        => false,
             'image'           => null,
+            'image_url'       => null,
             'stock_status'    => $outOfStock ? 'out_of_stock' : 'available',
             'display'         => $pack->name . ' — Pack',
             'product'         => [
@@ -68,6 +75,7 @@ class VariantController extends Controller
                         'id'           => $item->variant->id,
                         'sku'          => $item->variant->sku,
                         'price'        => $item->variant->price,
+                        'image_url'    => $item->variant->image_url,
                         'product'      => $item->variant->product ? [
                             'id'   => $item->variant->product->id,
                             'name' => $item->variant->product->name,
@@ -76,8 +84,50 @@ class VariantController extends Controller
                     ] : null,
                 ];
             })->toArray(),
-            'attributes'      => [],
+            'attributes' => [],
         ];
+    }
+
+    // -------------------------------------------------------------------------
+    // Helper — guardar imagen subida
+    // -------------------------------------------------------------------------
+
+    /**
+     * Guarda el archivo en storage/app/public/variant_images
+     * y devuelve la ruta relativa (lo que se guarda en BD).
+     */
+    private function storeImage($file): string
+    {
+        return $file->store('variant_images', 'public');
+    }
+
+    /**
+     * Si el campo enhanced_image_url viene en el request (imagen mejorada por IA),
+     * la descargamos y la guardamos en storage para tenerla localmente.
+     * Así no dependemos de URLs externas que expiren.
+     */
+    private function downloadAndStoreImage(string $url): ?string
+    {
+        try {
+            $contents = file_get_contents($url);
+            if ($contents === false) {
+                return null;
+            }
+
+            // Inferir extensión desde la URL o usar jpg por defecto
+            $ext      = pathinfo(parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'jpg';
+            $filename = 'variant_images/' . uniqid('vi_', true) . '.' . $ext;
+
+            Storage::disk('public')->put($filename, $contents);
+
+            return $filename;
+        } catch (\Throwable $e) {
+            \Log::warning('VariantController: no se pudo descargar imagen mejorada', [
+                'url'   => $url,
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -86,47 +136,36 @@ class VariantController extends Controller
 
     /**
      * GET /api/variants
-     * Soporta filtros via query string:
-     *   - search       : SKU o nombre de producto
-     *   - active       : 1 | 0
-     *   - featured     : 1 | 0
-     *   - stock_status : available | out_of_stock | next_batch
-     *   - product_id   : integer
      */
     public function index(Request $request)
     {
         $query = Variant::with('product');
 
-        // Búsqueda por SKU o nombre de producto
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('sku', 'like', "%{$search}%")
-                  ->orWhereHas('product', fn($q2) => $q2->where('name', 'like', "%{$search}%"));
+                  ->orWhereHas('product', fn ($q2) => $q2->where('name', 'like', "%{$search}%"));
             });
         }
 
-        // Filtro por activo
         if ($request->has('active') && $request->active !== '') {
             $query->where('active', (bool) $request->active);
         }
 
-        // Filtro por destacado
         if ($request->has('featured') && $request->featured !== '') {
             $query->where('destacado', (bool) $request->featured);
         }
 
-        // Filtro por stock_status
         if ($request->filled('stock_status')) {
             $query->where('stock_status', $request->stock_status);
         }
 
-        // Filtro por producto
         if ($request->filled('product_id')) {
             $query->where('product_id', $request->product_id);
         }
 
-        $variants = $query->get()->map(fn($v) => $this->formatVariant($v));
+        $variants = $query->get()->map(fn ($v) => $this->formatVariant($v));
 
         return response()->json($variants);
     }
@@ -142,22 +181,30 @@ class VariantController extends Controller
 
     /**
      * POST /api/variants
+     *
+     * Acepta:
+     *   - image              : archivo (multipart)
+     *   - enhanced_image_url : URL de imagen mejorada por IA
      */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'product_id'   => 'required|exists:products,id',
-            'sku'          => 'nullable|string|unique:variants,sku',
-            'price'        => 'required|numeric|min:0',
-            'active'       => 'boolean',
-            'destacado'    => 'boolean',
-            'stock_status' => 'nullable|in:available,out_of_stock,next_batch',
-            'image'        => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
+            'product_id'        => 'required|exists:products,id',
+            'sku'               => 'nullable|string|unique:variants,sku',
+            'price'             => 'required|numeric|min:0',
+            'active'            => 'boolean',
+            'destacado'         => 'boolean',
+            'stock_status'      => 'nullable|in:available,out_of_stock,next_batch',
+            'image'             => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'enhanced_image_url'=> 'nullable|url',
         ]);
 
-        $path = null;
+        $imagePath = null;
+
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('variant_images', 'public');
+            $imagePath = $this->storeImage($request->file('image'));
+        } elseif ($request->filled('enhanced_image_url')) {
+            $imagePath = $this->downloadAndStoreImage($request->enhanced_image_url);
         }
 
         $variant = Variant::create([
@@ -167,7 +214,7 @@ class VariantController extends Controller
             'active'       => $validated['active'] ?? true,
             'destacado'    => $validated['destacado'] ?? false,
             'stock_status' => $validated['stock_status'] ?? 'available',
-            'image'        => $path,
+            'image'        => $imagePath,
         ]);
 
         return response()->json([
@@ -178,27 +225,43 @@ class VariantController extends Controller
 
     /**
      * PUT /api/variants/{id}
+     *
+     * Si viene una nueva imagen (archivo o URL mejorada), elimina la anterior.
+     *
+     * IMPORTANTE: Laravel no parsea multipart en PUT/PATCH.
+     * El frontend debe enviar POST con _method=PUT (method spoofing)
+     * o usar PATCH con FormData. En esta implementación aceptamos ambos.
      */
     public function update(Request $request, $id)
     {
         $variant = Variant::findOrFail($id);
 
         $validated = $request->validate([
-            'sku'          => 'nullable|string|unique:variants,sku,' . $variant->id,
-            'price'        => 'sometimes|numeric|min:0',
-            'active'       => 'boolean',
-            'destacado'    => 'boolean',
-            'stock_status' => 'nullable|in:available,out_of_stock,next_batch',
-            'image'        => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
+            'sku'               => 'nullable|string|unique:variants,sku,' . $variant->id,
+            'price'             => 'sometimes|numeric|min:0',
+            'active'            => 'boolean',
+            'destacado'         => 'boolean',
+            'stock_status'      => 'nullable|in:available,out_of_stock,next_batch',
+            'image'             => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'enhanced_image_url'=> 'nullable|url',
         ]);
 
+        $newImagePath = null;
+
         if ($request->hasFile('image')) {
-            // Eliminar imagen antigua si existe
-            if ($variant->image) {
-                \Storage::disk('public')->delete($variant->image);
-            }
-            $validated['image'] = $request->file('image')->store('variant_images', 'public');
+            // Eliminar imagen anterior antes de guardar la nueva
+            $variant->deleteImage();
+            $newImagePath = $this->storeImage($request->file('image'));
+            $validated['image'] = $newImagePath;
+
+        } elseif ($request->filled('enhanced_image_url')) {
+            $variant->deleteImage();
+            $newImagePath = $this->downloadAndStoreImage($request->enhanced_image_url);
+            $validated['image'] = $newImagePath;
         }
+
+        // Limpiar campos no permitidos en fillable antes de update
+        unset($validated['enhanced_image_url']);
 
         $variant->update($validated);
 
@@ -210,15 +273,12 @@ class VariantController extends Controller
 
     /**
      * DELETE /api/variants/{id}
+     * Elimina también la imagen del disco.
      */
     public function destroy($id)
     {
         $variant = Variant::findOrFail($id);
-
-        if ($variant->image) {
-            \Storage::disk('public')->delete($variant->image);
-        }
-
+        $variant->deleteImage();
         $variant->delete();
 
         return response()->json(['message' => 'Variant deleted']);
@@ -230,11 +290,6 @@ class VariantController extends Controller
 
     /**
      * GET /api/variants/active
-     * Variantes activas con atributos, producto y categoría.
-     * Soporta filtros:
-     *   - search       : SKU o nombre de producto
-     *   - stock_status : available | out_of_stock | next_batch
-     *   - featured     : 1 | 0
      */
     public function getActiveVariants(Request $request)
     {
@@ -245,7 +300,7 @@ class VariantController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('sku', 'like', "%{$search}%")
-                  ->orWhereHas('product', fn($q2) => $q2->where('name', 'like', "%{$search}%"));
+                  ->orWhereHas('product', fn ($q2) => $q2->where('name', 'like', "%{$search}%"));
             });
         }
 
@@ -272,13 +327,13 @@ class VariantController extends Controller
 
             if ($request->filled('stock_status')) {
                 if ($request->stock_status === 'available') {
-                    $packQuery->whereDoesntHave('items.variant', fn($q) => $q->where('stock_status', 'out_of_stock'));
+                    $packQuery->whereDoesntHave('items.variant', fn ($q) => $q->where('stock_status', 'out_of_stock'));
                 } elseif ($request->stock_status === 'out_of_stock') {
-                    $packQuery->whereHas('items.variant', fn($q) => $q->where('stock_status', 'out_of_stock'));
+                    $packQuery->whereHas('items.variant', fn ($q) => $q->where('stock_status', 'out_of_stock'));
                 }
             }
 
-            $packs = $packQuery->get()->map(fn($pack) => $this->formatPackAsVariant($pack));
+            $packs = $packQuery->get()->map(fn ($pack) => $this->formatPackAsVariant($pack));
         }
 
         $variants = $query->get()->map(function ($variant) {
@@ -291,7 +346,7 @@ class VariantController extends Controller
                         'value' => $attribute->attributeValue->value ?? null,
                     ];
                 })
-                ->filter(fn($item) => $item['type'] && $item['value'])
+                ->filter(fn ($item) => $item['type'] && $item['value'])
                 ->values();
 
             return $base;
@@ -306,13 +361,6 @@ class VariantController extends Controller
 
     /**
      * GET /api/variants/search
-     * Búsqueda rápida de variantes (para autocomplete / filtros de frontend).
-     * Query params:
-     *   - q            : texto libre (SKU o nombre de producto)
-     *   - active       : 1 | 0
-     *   - featured     : 1 | 0
-     *   - stock_status : available | out_of_stock | next_batch
-     *   - product_id   : integer
      */
     public function search(Request $request)
     {
@@ -322,7 +370,7 @@ class VariantController extends Controller
             $q = $request->q;
             $query->where(function ($builder) use ($q) {
                 $builder->where('sku', 'like', "%{$q}%")
-                        ->orWhereHas('product', fn($pq) => $pq->where('name', 'like', "%{$q}%"));
+                        ->orWhereHas('product', fn ($pq) => $pq->where('name', 'like', "%{$q}%"));
             });
         }
 
@@ -342,7 +390,7 @@ class VariantController extends Controller
             $query->where('product_id', $request->product_id);
         }
 
-        $results = $query->get()->map(fn($v) => $this->formatVariant($v));
+        $results = $query->get()->map(fn ($v) => $this->formatVariant($v));
 
         return response()->json($results);
     }
@@ -379,7 +427,7 @@ class VariantController extends Controller
 
     public function toggleActive($id)
     {
-        $variant = Variant::findOrFail($id);
+        $variant         = Variant::findOrFail($id);
         $variant->active = !$variant->active;
         $variant->save();
 
@@ -392,7 +440,7 @@ class VariantController extends Controller
 
     public function toggleFeatured($id)
     {
-        $variant = Variant::findOrFail($id);
+        $variant           = Variant::findOrFail($id);
         $variant->destacado = !$variant->destacado;
         $variant->save();
 
@@ -404,12 +452,11 @@ class VariantController extends Controller
     }
 
     // -------------------------------------------------------------------------
-    // Cambio de stock
+    // Stock
     // -------------------------------------------------------------------------
 
     /**
      * PATCH /api/variants/{id}/stock
-     * Body: { "stock_status": "available" | "out_of_stock" | "next_batch" }
      */
     public function updateStock(Request $request, $id)
     {
