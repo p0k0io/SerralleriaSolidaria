@@ -23,13 +23,8 @@ class VariantController extends Controller
             'price'        => $variant->price,
             'active'       => $variant->active,
             'featured'     => $variant->destacado,
-<<<<<<< Updated upstream
             'image'        => $variant->image,
             'image_url' => $variant->image_url,
-=======
-            'image'        => $variant->image,          // ruta relativa (para uso interno)
-            'image_url'    => $variant->image_url,      // URL absoluta lista para <img>
->>>>>>> Stashed changes
             'stock_status' => $variant->stock_status,
             'display'      => ($variant->product->name ?? 'Producto') . ' — SKU: ' . ($variant->sku ?? 'N/A'),
             'product'      => $variant->product ?? null,
