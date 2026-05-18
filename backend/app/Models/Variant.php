@@ -22,38 +22,8 @@ class Variant extends Model
         'destacado'    => 'boolean',
         'stock_status' => 'string',
     ];
+
     protected $appends = ['image_url'];
-
-    /*
-    |--------------------------------------------------------------------------
-    | ACCESSOR — image_url
-    |--------------------------------------------------------------------------
-    | Devuelve siempre una URL absoluta lista para el frontend.
-    | Si la imagen ya es una URL completa (enhanced por IA), la devuelve tal cual.
-    | Si es una ruta relativa guardada en storage, construye la URL pública.
-    | Si no hay imagen, devuelve null.
-    |--------------------------------------------------------------------------
-    */
-    public function getImageUrlAttribute(): ?string
-    {
-        if (!$this->image) {
-            return null;
-        }
-
-        // Si ya es una URL completa (http/https), devolverla tal cual
-        if (str_starts_with($this->image, 'http')) {
-            return $this->image;
-        }
-
-        // Ruta relativa guardada en storage/app/public
-        return Storage::disk('public')->url($this->image);
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Relaciones
-    |--------------------------------------------------------------------------
-    */
 
     /*
     |--------------------------------------------------------------------------
