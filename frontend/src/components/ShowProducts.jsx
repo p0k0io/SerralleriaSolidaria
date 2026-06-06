@@ -2,12 +2,23 @@ import { useEffect, useState, useMemo } from "react";
 import { useAdminToast } from "../context/AdminToastContext";
 
 const API = "http://localhost:8000/api";
-const STORAGE = "http://localhost:8000/storage";
 
-const img = (path) => {
-  if (!path) return null;
-  if (path.startsWith("http")) return path;
-  return `${STORAGE}/${path}`;
+/*
+|--------------------------------------------------------------------------
+| Helper — construir URL de imagen
+|--------------------------------------------------------------------------
+| El backend ya devuelve image_url (URL absoluta).
+| Esta función es el único punto donde se construye la URL de imagen.
+|--------------------------------------------------------------------------
+*/
+const imgUrl = (variant) => {
+  if (!variant) return null;
+  if (variant.image_url) return variant.image_url;
+  if (variant.image) {
+    if (variant.image.startsWith("http")) return variant.image;
+    return `http://localhost:8000/storage/${variant.image}`;
+  }
+  return null;
 };
 
 /* ─── CONSTANTES ─────────────────────────────────────────────── */
@@ -27,14 +38,22 @@ const STOCK_OPTIONS = [
 /* ─── HELPERS UI ─────────────────────────────────────────────── */
 
 function ImageSlot({ src, size = "md" }) {
+  const [error, setError] = useState(false);
   const sizes = { sm: "w-10 h-10", md: "w-16 h-16", lg: "w-20 h-20" };
+
   return (
     <div className={`${sizes[size]} rounded-xl overflow-hidden bg-orange-50 flex items-center justify-center flex-shrink-0 border border-orange-100`}>
-      {src ? (
-        <img src={src} className="w-full h-full object-cover" alt="" />
+      {src && !error ? (
+        <img
+          src={src}
+          className="w-full h-full object-cover"
+          alt=""
+          onError={() => setError(true)}
+        />
       ) : (
         <svg className="w-5 h-5 text-orange-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
       )}
     </div>
@@ -69,7 +88,8 @@ function IconBtn({ onClick, title, variant = "default", children }) {
     amber:   "bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200",
   };
   return (
-    <button onClick={onClick} title={title} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${variants[variant]}`}>
+    <button onClick={onClick} title={title}
+      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${variants[variant]}`}>
       {children}
     </button>
   );
@@ -80,19 +100,23 @@ function IconBtn({ onClick, title, variant = "default", children }) {
 function SearchBar({ value, onChange }) {
   return (
     <div className="relative flex-1 min-w-[180px]">
-      <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+        xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
       </svg>
       <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
+        type="text" value={value} onChange={(e) => onChange(e.target.value)}
         placeholder="Buscar producto, SKU, fabricante…"
         className="w-full h-[42px] pl-9 pr-4 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
       />
       {value && (
-        <button onClick={() => onChange("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <button onClick={() => onChange("")}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
         </button>
       )}
     </div>
@@ -104,8 +128,7 @@ function FilterChip({ value, onChange, options, placeholder }) {
   return (
     <div className="relative">
       <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
+        value={value} onChange={(e) => onChange(e.target.value)}
         className={`appearance-none h-[42px] pl-3 pr-8 text-sm rounded-xl border transition-all outline-none cursor-pointer
           ${active ? "bg-orange-500 border-orange-500 text-white font-semibold" : "bg-white border-slate-200 text-slate-600 hover:border-orange-300 focus:border-orange-400 focus:ring-2 focus:ring-orange-100"}`}
       >
@@ -115,7 +138,10 @@ function FilterChip({ value, onChange, options, placeholder }) {
         ))}
       </select>
       <div className={`pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 ${active ? "text-white" : "text-slate-400"}`}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
       </div>
     </div>
   );
@@ -138,20 +164,18 @@ function EditProductForm({ product, onSave, onCancel }) {
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
   function handleSave() {
-    // Construir payload con tipos correctos para el backend
-    const payload = {
+    onSave({
       name:               form.name,
       description:        form.description,
       manufacturer:       form.manufacturer,
       shipping_price:     parseFloat(form.shipping_price) || 0,
       installation_price: parseFloat(form.installation_price) || 0,
       stock_status:       form.stock_status,
-      has_extra_keys:     form.has_extra_keys,          // booleano
+      has_extra_keys:     form.has_extra_keys,
       extra_key_price:    form.has_extra_keys && form.extra_key_price !== ""
                             ? parseFloat(form.extra_key_price)
                             : null,
-    };
-    onSave(payload);
+    });
   }
 
   const inputCls = "w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 transition";
@@ -180,27 +204,16 @@ function EditProductForm({ product, onSave, onCancel }) {
         </div>
         <div>
           <label className={labelCls}>Precio envío (€)</label>
-          <input
-            type="number" min="0" step="0.01"
-            value={form.shipping_price}
-            onChange={(e) => set("shipping_price", e.target.value)}
-            placeholder="0.00"
-            className={inputCls}
-          />
+          <input type="number" min="0" step="0.01" value={form.shipping_price}
+            onChange={(e) => set("shipping_price", e.target.value)} placeholder="0.00" className={inputCls} />
         </div>
         <div>
           <label className={labelCls}>Precio instalación (€)</label>
-          <input
-            type="number" min="0" step="0.01"
-            value={form.installation_price}
-            onChange={(e) => set("installation_price", e.target.value)}
-            placeholder="0.00"
-            className={inputCls}
-          />
+          <input type="number" min="0" step="0.01" value={form.installation_price}
+            onChange={(e) => set("installation_price", e.target.value)} placeholder="0.00" className={inputCls} />
         </div>
       </div>
 
-      {/* Llaves extra */}
       <div className="flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 bg-white">
         <label className="flex items-center gap-2 cursor-pointer select-none">
           <div className="relative" onClick={() => set("has_extra_keys", !form.has_extra_keys)}>
@@ -212,30 +225,21 @@ function EditProductForm({ product, onSave, onCancel }) {
         {form.has_extra_keys && (
           <div className="flex items-center gap-1.5 flex-1">
             <span className="text-xs text-slate-400">Precio/llave</span>
-            <input
-              type="number" min="0" step="0.01"
-              value={form.extra_key_price}
-              onChange={(e) => set("extra_key_price", e.target.value)}
-              placeholder="5.00"
-              className="border border-slate-200 rounded-lg px-2 py-1 text-xs w-20 focus:outline-none focus:ring-2 focus:ring-orange-300"
-            />
+            <input type="number" min="0" step="0.01" value={form.extra_key_price}
+              onChange={(e) => set("extra_key_price", e.target.value)} placeholder="5.00"
+              className="border border-slate-200 rounded-lg px-2 py-1 text-xs w-20 focus:outline-none focus:ring-2 focus:ring-orange-300" />
             <span className="text-xs text-slate-400">€</span>
           </div>
         )}
       </div>
 
-      {/* Vista previa de lo que se enviará */}
-      <div className="text-[10px] text-slate-400 bg-slate-50 rounded-lg px-2 py-1.5 font-mono leading-relaxed">
-        <span className="font-semibold text-slate-500">Payload: </span>
-        shipping={parseFloat(form.shipping_price)||0} · install={parseFloat(form.installation_price)||0} · keys={form.has_extra_keys?"sí":"no"}
-        {form.has_extra_keys && form.extra_key_price !== "" && ` · key_price=${parseFloat(form.extra_key_price)}`}
-      </div>
-
       <div className="flex gap-2 pt-1">
-        <button onClick={handleSave} className="bg-orange-500 text-white text-xs px-4 py-1.5 rounded-lg hover:bg-orange-600 transition font-medium">
+        <button onClick={handleSave}
+          className="bg-orange-500 text-white text-xs px-4 py-1.5 rounded-lg hover:bg-orange-600 transition font-medium">
           Guardar
         </button>
-        <button onClick={onCancel} className="text-slate-500 text-xs px-3 py-1.5 rounded-lg hover:bg-slate-100 transition">
+        <button onClick={onCancel}
+          className="text-slate-500 text-xs px-3 py-1.5 rounded-lg hover:bg-slate-100 transition">
           Cancelar
         </button>
       </div>
@@ -243,7 +247,7 @@ function EditProductForm({ product, onSave, onCancel }) {
   );
 }
 
-/* ─── EXTRA INFO ROW (shipping / install / keys) ─────────────── */
+/* ─── PRODUCT META ───────────────────────────────────────────── */
 
 function ProductMeta({ product }) {
   const hasShipping = parseFloat(product.shipping_price) > 0;
@@ -255,19 +259,16 @@ function ProductMeta({ product }) {
     <div className="flex flex-wrap gap-1.5 mt-1.5">
       {hasShipping && (
         <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-500 border border-blue-100">
-          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
           Envío {parseFloat(product.shipping_price).toFixed(2)} €
         </span>
       )}
       {hasInstall && (
         <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-violet-50 text-violet-500 border border-violet-100">
-          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
           Instalación {parseFloat(product.installation_price).toFixed(2)} €
         </span>
       )}
       {hasKeys && (
         <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200">
-          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
           Llaves extra {product.extra_key_price ? `${parseFloat(product.extra_key_price).toFixed(2)} €/ud` : ""}
         </span>
       )}
@@ -282,35 +283,65 @@ function VariantRow({ variant, onToggle, onDelete, onUpdate, onToggleFeatured, o
   const [sku, setSku]             = useState(variant.sku ?? "");
   const [price, setPrice]         = useState(variant.price);
   const [imageFile, setImageFile] = useState(null);
+  const [preview, setPreview]     = useState(null);
 
-  function handleSave() {
-    onUpdate(variant.id, { sku, price, image: imageFile ?? variant.image });
-    setEditing(false);
+  useEffect(() => {
+    return () => { if (preview) URL.revokeObjectURL(preview); };
+  }, [preview]);
+
+  function handleImageChange(file) {
+    setImageFile(file);
+    if (file) {
+      if (preview) URL.revokeObjectURL(preview);
+      setPreview(URL.createObjectURL(file));
+    }
   }
 
-  const stockCfg = STOCK_CONFIG[variant.stock_status] ?? STOCK_CONFIG.available;
+  function handleSave() {
+    onUpdate(variant.id, { sku, price, image: imageFile });
+    setEditing(false);
+    setImageFile(null);
+    setPreview(null);
+  }
+
+  const stockCfg   = STOCK_CONFIG[variant.stock_status] ?? STOCK_CONFIG.available;
+  const currentImg = preview || imgUrl(variant);
 
   return (
     <div className="flex items-center gap-3 py-2.5 px-3 rounded-xl bg-slate-50 hover:bg-orange-50/40 transition group">
-      <ImageSlot src={img(variant.image)} size="sm" />
+
+      <ImageSlot src={currentImg} size="sm" />
 
       {editing ? (
         <div className="flex flex-wrap gap-2 flex-1 items-center">
-          <input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="SKU" className="border border-slate-200 rounded-lg px-2 py-1 text-xs w-28 focus:outline-none focus:ring-2 focus:ring-orange-300" />
-          <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Precio" type="number" min="0" step="0.01" className="border border-slate-200 rounded-lg px-2 py-1 text-xs w-20 focus:outline-none focus:ring-2 focus:ring-orange-300" />
+          <input value={sku} onChange={(e) => setSku(e.target.value)}
+            placeholder="SKU"
+            className="border border-slate-200 rounded-lg px-2 py-1 text-xs w-28 focus:outline-none focus:ring-2 focus:ring-orange-300" />
+          <input value={price} onChange={(e) => setPrice(e.target.value)}
+            placeholder="Precio" type="number" min="0" step="0.01"
+            className="border border-slate-200 rounded-lg px-2 py-1 text-xs w-20 focus:outline-none focus:ring-2 focus:ring-orange-300" />
+
           <label className="cursor-pointer text-xs text-slate-400 border border-dashed border-slate-300 rounded-lg px-2 py-1 hover:border-orange-400 hover:text-orange-500 transition">
-            {imageFile ? imageFile.name.slice(0, 12) + "…" : "Imagen"}
-            <input type="file" className="hidden" onChange={(e) => setImageFile(e.target.files[0])} />
+            {imageFile ? imageFile.name.slice(0, 12) + "…" : preview ? "✓ Nueva imagen" : "Cambiar imagen"}
+            <input type="file" accept="image/*" className="hidden"
+              onChange={(e) => handleImageChange(e.target.files[0])} />
           </label>
-          <button onClick={handleSave} className="bg-orange-500 text-white text-xs px-3 py-1 rounded-lg hover:bg-orange-600 transition">OK</button>
-          <button onClick={() => setEditing(false)} className="text-slate-400 text-xs hover:text-slate-600">✕</button>
+
+          <button onClick={handleSave}
+            className="bg-orange-500 text-white text-xs px-3 py-1 rounded-lg hover:bg-orange-600 transition">
+            OK
+          </button>
+          <button onClick={() => { setEditing(false); setImageFile(null); setPreview(null); }}
+            className="text-slate-400 text-xs hover:text-slate-600">✕</button>
         </div>
       ) : (
         <>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-slate-700 truncate">{variant.sku ?? "—"}</p>
           </div>
-          <p className="text-sm font-semibold text-orange-500 tabular-nums shrink-0">{parseFloat(variant.price).toFixed(2)} €</p>
+          <p className="text-sm font-semibold text-orange-500 tabular-nums shrink-0">
+            {parseFloat(variant.price).toFixed(2)} €
+          </p>
           <Badge active={variant.active} />
           <div className="relative shrink-0">
             <select
@@ -327,8 +358,13 @@ function VariantRow({ variant, onToggle, onDelete, onUpdate, onToggleFeatured, o
 
       {!editing && (
         <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
-          <IconBtn onClick={() => onToggleFeatured(variant.id)} title={variant.featured ? "Desmarcar destacado" : "Destacar"} variant={variant.featured ? "orange" : "default"}>★</IconBtn>
-          <IconBtn onClick={() => onToggle(variant.id)} title={variant.active ? "Desactivar" : "Activar"}>{variant.active ? "Off" : "On"}</IconBtn>
+          <IconBtn onClick={() => onToggleFeatured(variant.id)}
+            title={variant.featured ? "Desmarcar destacado" : "Destacar"}
+            variant={variant.featured ? "orange" : "default"}>★</IconBtn>
+          <IconBtn onClick={() => onToggle(variant.id)}
+            title={variant.active ? "Desactivar" : "Activar"}>
+            {variant.active ? "Off" : "On"}
+          </IconBtn>
           <IconBtn onClick={() => setEditing(true)} variant="ghost" title="Editar">✎</IconBtn>
           <IconBtn onClick={() => onDelete(variant.id)} variant="red" title="Eliminar">✕</IconBtn>
         </div>
@@ -344,22 +380,45 @@ function NewVariantForm({ productId, onCreated, showToast }) {
   const [price, setPrice]         = useState("");
   const [stockStatus, setStock]   = useState("available");
   const [imageFile, setImageFile] = useState(null);
+  const [preview, setPreview]     = useState(null);
   const [busy, setBusy]           = useState(false);
+
+  useEffect(() => {
+    return () => { if (preview) URL.revokeObjectURL(preview); };
+  }, [preview]);
+
+  function handleImageChange(file) {
+    setImageFile(file);
+    if (file) {
+      if (preview) URL.revokeObjectURL(preview);
+      setPreview(URL.createObjectURL(file));
+    } else {
+      setPreview(null);
+    }
+  }
 
   async function handleCreate() {
     if (!price) return;
     setBusy(true);
-    const form = new FormData();
-    if (sku) form.append("sku", sku);
-    form.append("price", price);
-    form.append("product_id", productId);
-    form.append("stock_status", stockStatus);
-    if (imageFile) form.append("image", imageFile);
+
+    const token = localStorage.getItem("token");
+    const fd = new FormData();
+    if (sku) fd.append("sku", sku);
+    fd.append("price",        price);
+    fd.append("product_id",   productId);
+    fd.append("stock_status", stockStatus);
+    if (imageFile) fd.append("image", imageFile);
 
     try {
-      const res = await fetch(`${API}/variants`, { method: "POST", body: form });
+      // ✅ RUTA CORRECTA: POST /api/variants
+      const res = await fetch(`${API}/variants`, {
+        method:  "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body:    fd,
+      });
       if (!res.ok) throw new Error("No se pudo crear la variante");
-      setSku(""); setPrice(""); setStock("available"); setImageFile(null);
+      setSku(""); setPrice(""); setStock("available");
+      setImageFile(null); setPreview(null);
       showToast("Variante creada");
       onCreated();
     } catch (err) {
@@ -372,16 +431,27 @@ function NewVariantForm({ productId, onCreated, showToast }) {
   return (
     <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-dashed border-slate-200 mt-1">
       <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-1">Nueva variante</span>
-      <input placeholder="SKU" value={sku} onChange={(e) => setSku(e.target.value)} className="border border-slate-200 rounded-lg px-2 py-1 text-xs w-24 focus:outline-none focus:ring-2 focus:ring-orange-300" />
-      <input placeholder="Precio €" type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="border border-slate-200 rounded-lg px-2 py-1 text-xs w-20 focus:outline-none focus:ring-2 focus:ring-orange-300" />
-      <select value={stockStatus} onChange={(e) => setStock(e.target.value)} className="border border-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-orange-300">
+      <input placeholder="SKU" value={sku} onChange={(e) => setSku(e.target.value)}
+        className="border border-slate-200 rounded-lg px-2 py-1 text-xs w-24 focus:outline-none focus:ring-2 focus:ring-orange-300" />
+      <input placeholder="Precio €" type="number" min="0" step="0.01" value={price}
+        onChange={(e) => setPrice(e.target.value)}
+        className="border border-slate-200 rounded-lg px-2 py-1 text-xs w-20 focus:outline-none focus:ring-2 focus:ring-orange-300" />
+      <select value={stockStatus} onChange={(e) => setStock(e.target.value)}
+        className="border border-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-orange-300">
         {STOCK_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
-      <label className="cursor-pointer text-xs text-slate-400 border border-dashed border-slate-300 rounded-lg px-2 py-1 hover:border-orange-400 hover:text-orange-500 transition">
-        {imageFile ? imageFile.name.slice(0, 12) + "…" : "+ Imagen"}
-        <input type="file" className="hidden" onChange={(e) => setImageFile(e.target.files[0])} />
+
+      <label className="cursor-pointer text-xs text-slate-400 border border-dashed border-slate-300 rounded-lg px-2 py-1 hover:border-orange-400 hover:text-orange-500 transition flex items-center gap-1.5">
+        {preview ? (
+          <img src={preview} alt="preview" className="w-6 h-6 rounded object-cover" />
+        ) : null}
+        {imageFile ? imageFile.name.slice(0, 10) + "…" : "+ Imagen"}
+        <input type="file" accept="image/*" className="hidden"
+          onChange={(e) => handleImageChange(e.target.files[0])} />
       </label>
-      <button onClick={handleCreate} disabled={busy || !price} className="bg-orange-500 text-white text-xs px-4 py-1.5 rounded-lg hover:bg-orange-600 transition disabled:opacity-40 font-medium">
+
+      <button onClick={handleCreate} disabled={busy || !price}
+        className="bg-orange-500 text-white text-xs px-4 py-1.5 rounded-lg hover:bg-orange-600 transition disabled:opacity-40 font-medium">
         {busy ? "…" : "+ Añadir"}
       </button>
     </div>
@@ -394,129 +464,125 @@ function ProductCard({ product, onReload, showToast }) {
   const [open, setOpen]       = useState(false);
   const [editing, setEditing] = useState(false);
 
+  const token = localStorage.getItem("token");
+
   async function toggle() {
     try {
-      const res = await fetch(`${API}/products/${product.active ? "disable" : "enable"}/${product.id}`, { method: "POST" });
+      const res = await fetch(
+        `${API}/products/${product.active ? "disable" : "enable"}/${product.id}`,
+        { method: "POST", headers: { Authorization: `Bearer ${token}` } }
+      );
       if (!res.ok) throw new Error("No se pudo actualizar el estado del producto");
       showToast(product.active ? "Producto desactivado" : "Producto activado");
       onReload();
-    } catch (err) {
-      showToast(err.message || "Error al cambiar estado", "error");
-    }
+    } catch (err) { showToast(err.message || "Error al cambiar estado", "error"); }
   }
 
   async function remove() {
     if (!confirm(`¿Eliminar "${product.name}"?`)) return;
     try {
-      const res = await fetch(`${API}/products/${product.id}`, { method: "DELETE" });
+      const res = await fetch(`${API}/products/${product.id}`,
+        { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error("No se pudo eliminar el producto");
       showToast("Producto eliminado");
       onReload();
-    } catch (err) {
-      showToast(err.message || "Error al eliminar producto", "error");
-    }
+    } catch (err) { showToast(err.message || "Error al eliminar producto", "error"); }
   }
 
-  // ── CORRECCIÓN CLAVE: enviamos todos los campos con tipos correctos ──
   async function save(payload) {
     try {
       const res = await fetch(`${API}/products/${product.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name:               payload.name,
-          description:        payload.description ?? null,
-          manufacturer:       payload.manufacturer ?? null,
-          shipping_price:     payload.shipping_price,
-          installation_price: payload.installation_price,
-          stock_status:       payload.stock_status,
-          has_extra_keys:     payload.has_extra_keys,   // true/false
-          extra_key_price:    payload.extra_key_price,  // number o null
-        }),
+        method:  "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body:    JSON.stringify(payload),
       });
-
       if (!res.ok) throw new Error("No se pudo guardar el producto");
       setEditing(false);
       showToast("Producto actualizado");
       onReload();
-    } catch (err) {
-      showToast(err.message || "Error al guardar producto", "error");
-    }
+    } catch (err) { showToast(err.message || "Error al guardar producto", "error"); }
   }
 
   async function toggleVariant(id) {
     try {
-      const res = await fetch(`${API}/variants/${id}/toggle`, { method: "POST" });
-      if (!res.ok) throw new Error("No se pudo cambiar el estado de la variante");
+      // ✅ RUTA CORRECTA: POST /api/variants/{id}/toggle
+      const res = await fetch(`${API}/variants/${id}/toggle`,
+        { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error();
       showToast("Estado de variante actualizado");
       onReload();
-    } catch (err) {
-      showToast(err.message || "Error al actualizar variante", "error");
-    }
+    } catch { showToast("Error al actualizar variante", "error"); }
   }
 
   async function toggleFeatured(id) {
     try {
-      const res = await fetch(`${API}/variants/${id}/toggle-featured`, { method: "POST" });
-      if (!res.ok) throw new Error("No se pudo cambiar el estado de destacado");
+      // ✅ RUTA CORRECTA: POST /api/variants/{id}/toggle-featured
+      const res = await fetch(`${API}/variants/${id}/toggle-featured`,
+        { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error();
       showToast("Variante destacada actualizada");
       onReload();
-    } catch (err) {
-      showToast(err.message || "Error al destacar variante", "error");
-    }
+    } catch { showToast("Error al destacar variante", "error"); }
   }
 
   async function deleteVariant(id) {
     if (!confirm("¿Eliminar esta variante?")) return;
     try {
-      const res = await fetch(`${API}/variants/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("No se pudo eliminar la variante");
+      // ✅ RUTA CORRECTA: DELETE /api/variants/{id}
+      const res = await fetch(`${API}/variants/${id}`,
+        { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error();
       showToast("Variante eliminada");
       onReload();
-    } catch (err) {
-      showToast(err.message || "Error al eliminar variante", "error");
-    }
+    } catch { showToast("Error al eliminar variante", "error"); }
   }
 
   async function updateVariant(id, data) {
     try {
-      const form = new FormData();
-      form.append("_method", "PUT");
-      form.append("sku", data.sku ?? "");
-      form.append("price", data.price ?? "");
-    form.append("stock_status", data.stock_status ?? "available");
-      if (data.image instanceof File) form.append("image", data.image);
-      const res = await fetch(`${API}/variants/${id}`, { method: "POST", body: form });
-      if (!res.ok) throw new Error("No se pudo actualizar la variante");
+      const fd = new FormData();
+      fd.append("_method", "PUT");
+      fd.append("sku",          data.sku ?? "");
+      fd.append("price",        data.price ?? "");
+      fd.append("stock_status", data.stock_status ?? "available");
+      if (data.image instanceof File) fd.append("image", data.image);
+
+      // ✅ RUTA CORRECTA: POST /api/variants/{id} con _method=PUT (Laravel method spoofing)
+      const res = await fetch(`${API}/variants/${id}`, {
+        method:  "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body:    fd,
+      });
+      if (!res.ok) throw new Error();
       showToast("Variante guardada");
       onReload();
-    } catch (err) {
-      showToast(err.message || "Error al actualizar variante", "error");
-    }
+    } catch { showToast("Error al actualizar variante", "error"); }
   }
 
   async function updateVariantStock(id, stock_status) {
     try {
+      // ✅ RUTA CORRECTA: PATCH /api/variants/{id}/stock
       const res = await fetch(`${API}/variants/${id}/stock`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stock_status }),
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body:    JSON.stringify({ stock_status }),
       });
-      if (!res.ok) throw new Error("No se pudo actualizar el stock");
+      if (!res.ok) throw new Error();
       showToast("Stock de variante actualizado");
       onReload();
-    } catch (err) {
-      showToast(err.message || "Error al actualizar stock", "error");
-    }
+    } catch { showToast("Error al actualizar stock", "error"); }
   }
 
-  const firstVariantImage = product.variants?.find((v) => v.image)?.image;
+  // Imagen principal: primera variante que tenga imagen
+  const firstVariantImage = (() => {
+    const first = product.variants?.find((v) => v.image_url || v.image);
+    return first ? imgUrl(first) : null;
+  })();
 
   return (
     <div className={`bg-white rounded-2xl border transition-all duration-200 overflow-hidden ${open ? "border-orange-200 shadow-md shadow-orange-50" : "border-slate-100 shadow-sm hover:border-orange-100 hover:shadow"}`}>
       {/* Header */}
       <div className="flex items-start gap-4 p-5">
-        <ImageSlot src={img(firstVariantImage)} size="lg" />
+        <ImageSlot src={firstVariantImage} size="lg" />
 
         <div className="flex-1 min-w-0">
           {editing ? (
@@ -590,7 +656,7 @@ export default function ShowProducts({ refreshSignal }) {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
   const [refresh, setRefresh]   = useState(false);
-  const { showToast } = useAdminToast();
+  const { showToast }           = useAdminToast();
 
   const [search, setSearch]           = useState("");
   const [activeFilter, setActive]     = useState("");
@@ -598,6 +664,7 @@ export default function ShowProducts({ refreshSignal }) {
   const [categoryFilter, setCategory] = useState("");
 
   const reload = () => setRefresh((p) => !p);
+  const token  = localStorage.getItem("token");
 
   useEffect(() => {
     (async () => {
@@ -609,7 +676,10 @@ export default function ShowProducts({ refreshSignal }) {
         if (stockFilter)    params.set("stock_status", stockFilter);
         if (categoryFilter) params.set("category_id", categoryFilter);
 
-        const res = await fetch(`${API}/products?${params.toString()}`);
+        // ✅ RUTA CORRECTA: GET /api/products
+        const res = await fetch(`${API}/products?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (!res.ok) throw new Error("Error al obtener productos");
         const data = await res.json();
         setProducts(data);
@@ -630,14 +700,10 @@ export default function ShowProducts({ refreshSignal }) {
   }, [products]);
 
   const hasFilters = activeFilter || stockFilter || categoryFilter || search;
-
-  function clearFilters() {
-    setSearch(""); setActive(""); setStock(""); setCategory("");
-  }
+  function clearFilters() { setSearch(""); setActive(""); setStock(""); setCategory(""); }
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-8">
-      {/* Header */}
       <div className="max-w-3xl mx-auto mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -649,7 +715,6 @@ export default function ShowProducts({ refreshSignal }) {
           <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
         </div>
 
-        {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-2">
           <SearchBar value={search} onChange={setSearch} />
           <FilterChip value={activeFilter} onChange={setActive} placeholder="Estado"
@@ -659,55 +724,18 @@ export default function ShowProducts({ refreshSignal }) {
             <FilterChip value={categoryFilter} onChange={setCategory} placeholder="Categoría" options={categories} />
           )}
           {hasFilters && (
-            <button onClick={clearFilters} className="h-[42px] px-3.5 flex items-center gap-1.5 text-sm font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl hover:border-orange-300 hover:text-orange-500 transition-all">
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <button onClick={clearFilters}
+              className="h-[42px] px-3.5 flex items-center gap-1.5 text-sm font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl hover:border-orange-300 hover:text-orange-500 transition-all">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
               Limpiar
             </button>
           )}
         </div>
-
-        {/* Chips filtros activos */}
-        {hasFilters && (
-          <div className="flex flex-wrap gap-2 mt-3">
-            {search && (
-              <span className="flex items-center gap-1.5 text-xs font-semibold bg-orange-100 text-orange-700 px-3 py-1.5 rounded-full">
-                "{search}"
-                <button onClick={() => setSearch("")} className="hover:text-orange-900">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-              </span>
-            )}
-            {activeFilter && (
-              <span className="flex items-center gap-1.5 text-xs font-semibold bg-orange-100 text-orange-700 px-3 py-1.5 rounded-full">
-                {activeFilter === "1" ? "Activos" : "Inactivos"}
-                <button onClick={() => setActive("")} className="hover:text-orange-900">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-              </span>
-            )}
-            {stockFilter && (
-              <span className="flex items-center gap-1.5 text-xs font-semibold bg-orange-100 text-orange-700 px-3 py-1.5 rounded-full">
-                {STOCK_OPTIONS.find((o) => o.value === stockFilter)?.label}
-                <button onClick={() => setStock("")} className="hover:text-orange-900">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-              </span>
-            )}
-            {categoryFilter && (
-              <span className="flex items-center gap-1.5 text-xs font-semibold bg-orange-100 text-orange-700 px-3 py-1.5 rounded-full">
-                {categories.find((c) => c.value === categoryFilter)?.label}
-                <button onClick={() => setCategory("")} className="hover:text-orange-900">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-              </span>
-            )}
-          </div>
-        )}
       </div>
 
-      {/* Lista */}
       <div className="max-w-3xl mx-auto space-y-3">
         {loading && (
           <div className="space-y-3">
@@ -732,12 +760,10 @@ export default function ShowProducts({ refreshSignal }) {
 
         {!loading && !error && products.length === 0 && (
           <div className="text-center py-20 text-slate-300">
-            <svg className="w-10 h-10 mx-auto mb-3 text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-            </svg>
             <p className="text-sm font-medium">No hay productos{hasFilters ? " con estos filtros" : " todavía"}</p>
             {hasFilters && (
-              <button onClick={clearFilters} className="mt-2 text-xs text-orange-400 hover:text-orange-600 font-semibold transition">
+              <button onClick={clearFilters}
+                className="mt-2 text-xs text-orange-400 hover:text-orange-600 font-semibold transition">
                 Limpiar filtros
               </button>
             )}

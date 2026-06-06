@@ -1,17 +1,14 @@
-
 import { createContext, useContext, useState, useEffect } from "react"
 
 const TOKEN_KEY = "token"
+const USER_KEY  = "user"
 const API_BASE  = "http://localhost:8000/api"
 
-
 const AuthContext = createContext(null)
-
 
 export function AuthProvider({ children }) {
   const [user, setUser]       = useState(null)
   const [loading, setLoading] = useState(true)
-
 
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY)
@@ -30,21 +27,24 @@ export function AuthProvider({ children }) {
         if (!res.ok) throw new Error("Token inválido")
         return res.json()
       })
-      .then((data) => setUser(data))
+      .then((data) => {
+        setUser(data)
+        localStorage.setItem(USER_KEY, JSON.stringify(data)) // ← sincroniza siempre
+      })
       .catch(() => {
         localStorage.removeItem(TOKEN_KEY)
+        localStorage.removeItem(USER_KEY) // ← limpia también el user
         setUser(null)
       })
       .finally(() => setLoading(false))
   }, [])
 
-
   function login(token, userData) {
     localStorage.setItem(TOKEN_KEY, token)
+    localStorage.setItem(USER_KEY, JSON.stringify(userData)) // ← AÑADIDO
     setUser(userData)
   }
 
- 
   function logout() {
     const token = localStorage.getItem(TOKEN_KEY)
     if (token) {
@@ -57,6 +57,7 @@ export function AuthProvider({ children }) {
       }).catch(() => {})
     }
     localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(USER_KEY) // ← AÑADIDO
     setUser(null)
   }
 
@@ -80,7 +81,6 @@ export function AuthProvider({ children }) {
   )
 }
 
-/* ── Hook — úsalo en cualquier componente ── */
 export function useAuth() {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error("useAuth debe usarse dentro de <AuthProvider>")
