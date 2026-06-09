@@ -3,9 +3,11 @@ import { updateProfile } from "./profileApi"
 
 function Field({ label, name, value, onChange, type = "text", placeholder }) {
   const [focused, setFocused] = useState(false)
+  const id = `profile-${name}`
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <label
+        htmlFor={id}
         style={{
           fontSize: 11.5,
           fontWeight: 700,
@@ -17,6 +19,7 @@ function Field({ label, name, value, onChange, type = "text", placeholder }) {
         {label}
       </label>
       <input
+        id={id}
         type={type}
         name={name}
         value={value}

@@ -3,9 +3,11 @@ import { updatePassword } from "./profileApi"
 
 function PasswordField({ label, name, value, onChange, show, onToggle }) {
   const [focused, setFocused] = useState(false)
+  const id = `password-${name}`
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <label
+        htmlFor={id}
         style={{
           fontSize: 11.5,
           fontWeight: 700,
@@ -18,6 +20,7 @@ function PasswordField({ label, name, value, onChange, show, onToggle }) {
       </label>
       <div style={{ position: "relative" }}>
         <input
+          id={id}
           type={show ? "text" : "password"}
           name={name}
           value={value}
@@ -42,6 +45,7 @@ function PasswordField({ label, name, value, onChange, show, onToggle }) {
         />
         <button
           type="button"
+          aria-label={show ? "Ocultar contraseña" : "Mostrar contraseña"}
           onClick={onToggle}
           style={{
             position: "absolute",

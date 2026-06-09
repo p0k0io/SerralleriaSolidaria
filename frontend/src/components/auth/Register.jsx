@@ -97,115 +97,123 @@ export default function Register() {
 
             {/* ERROR */}
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl">
+              <div role="alert" className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl">
                 {error}
               </div>
             )}
 
             {/* SUCCESS */}
             {success && (
-              <div className="bg-green-50 border border-green-200 text-green-600 text-sm px-4 py-3 rounded-xl">
+              <div role="status" className="bg-green-50 border border-green-200 text-green-600 text-sm px-4 py-3 rounded-xl">
                 {success}
               </div>
             )}
 
-            {/* USERNAME */}
-            <div className="space-y-1.5">
-              <label className="text-sm text-slate-600">Usuario</label>
-              <input
-                type="text"
-                placeholder="LucasSa"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-400 outline-none"
-                required
-              />
-            </div>
-
-            {/* NAME */}
-            <div className="space-y-1.5">
-              <label className="text-sm text-slate-600">Nombre completo</label>
-              <input
-                type="text"
-                placeholder="Lucas Sanchez"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-400 outline-none"
-                required
-              />
-            </div>
-
-            {/* EMAIL */}
-            <div className="space-y-1.5">
-              <label className="text-sm text-slate-600">Correo</label>
-              <input
-                type="email"
-                placeholder="ejemplo@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-400 outline-none"
-                required
-              />
-            </div>
-
-            {/* ADDRESS + BUTTON */}
-            <div className="space-y-1.5">
-              <label className="text-sm text-slate-600">Dirección</label>
-
-              <div className="flex gap-2">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* USERNAME */}
+              <div className="space-y-1.5">
+                <label htmlFor="register-username" className="text-sm text-slate-600">Usuario</label>
                 <input
+                  id="register-username"
                   type="text"
-                  placeholder="Calle Alfonso XII, 23"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="LucasSa"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-400 outline-none"
                   required
                 />
-
-                <button
-                  type="button"
-                  onClick={() => setAddress("Sin especificar")}
-                  className="whitespace-nowrap px-3 py-2.5 text-xs bg-slate-100 hover:bg-slate-200 rounded-xl transition"
-                >
-                  Prefiero decirlo después
-                </button>
               </div>
-            </div>
 
-            {/* PASSWORD */}
-            <div className="space-y-1.5">
-              <label className="text-sm text-slate-600">Contraseña</label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-400 outline-none"
-                required
-              />
-            </div>
+              {/* NAME */}
+              <div className="space-y-1.5">
+                <label htmlFor="register-name" className="text-sm text-slate-600">Nombre completo</label>
+                <input
+                  id="register-name"
+                  type="text"
+                  placeholder="Lucas Sanchez"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-400 outline-none"
+                  required
+                />
+              </div>
 
-            {/* CONFIRM */}
-            <div className="space-y-1.5">
-              <label className="text-sm text-slate-600">Repetir contraseña</label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-400 outline-none"
-                required
-              />
-            </div>
+              {/* EMAIL */}
+              <div className="space-y-1.5">
+                <label htmlFor="register-email" className="text-sm text-slate-600">Correo</label>
+                <input
+                  id="register-email"
+                  type="email"
+                  placeholder="ejemplo@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-400 outline-none"
+                  required
+                />
+              </div>
 
-            {/* BUTTON */}
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 rounded-xl transition disabled:bg-orange-300"
-            >
-              {loading ? "Registrando..." : "Registrarse"}
-            </button>
+              {/* ADDRESS + BUTTON */}
+              <div className="space-y-1.5">
+                <label htmlFor="register-address" className="text-sm text-slate-600">Dirección</label>
+
+                <div className="flex gap-2">
+                  <input
+                    id="register-address"
+                    type="text"
+                    placeholder="Calle Alfonso XII, 23"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-400 outline-none"
+                    required
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setAddress("Sin especificar")}
+                    className="whitespace-nowrap px-3 py-2.5 text-xs bg-slate-100 hover:bg-slate-200 rounded-xl transition"
+                  >
+                    Prefiero decirlo después
+                  </button>
+                </div>
+              </div>
+
+              {/* PASSWORD */}
+              <div className="space-y-1.5">
+                <label htmlFor="register-password" className="text-sm text-slate-600">Contraseña</label>
+                <input
+                  id="register-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-400 outline-none"
+                  required
+                />
+              </div>
+
+              {/* CONFIRM */}
+              <div className="space-y-1.5">
+                <label htmlFor="register-confirm-password" className="text-sm text-slate-600">Repetir contraseña</label>
+                <input
+                  id="register-confirm-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-400 outline-none"
+                  required
+                />
+              </div>
+
+              {/* BUTTON */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 rounded-xl transition disabled:bg-orange-300"
+              >
+                {loading ? "Registrando..." : "Registrarse"}
+              </button>
+            </form>
 
             {/* LOGIN LINK */}
             <p className="text-center text-sm text-slate-500">

@@ -90,16 +90,17 @@ export default function CustomRequestForm() {
       </div>
 
       {/* Card */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+      <form className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6" onSubmit={(e) => { e.preventDefault(); handleSubmit() }}>
 
         {/* Name + Email + PHONE (SOLO AÑADIDO, RESTO IGUAL) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+            <label htmlFor="custom-request-name" className="block text-xs font-semibold text-slate-500 mb-1.5">
               Nombre
             </label>
             <input
+              id="custom-request-name"
               type="text"
               placeholder="Tu nombre completo"
               value={form.name}
@@ -109,10 +110,11 @@ export default function CustomRequestForm() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+            <label htmlFor="custom-request-email" className="block text-xs font-semibold text-slate-500 mb-1.5">
               Correo electrónico
             </label>
             <input
+              id="custom-request-email"
               type="email"
               placeholder="correo@ejemplo.com"
               value={form.email}
@@ -123,10 +125,11 @@ export default function CustomRequestForm() {
 
           {/* 👇 SOLO AÑADIDO */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+            <label htmlFor="custom-request-phone" className="block text-xs font-semibold text-slate-500 mb-1.5">
               Teléfono
             </label>
             <input
+              id="custom-request-phone"
               type="tel"
               placeholder="+34 600 000 000"
               value={form.phone}
@@ -139,10 +142,11 @@ export default function CustomRequestForm() {
 
         {/* Description (IGUAL) */}
         <div className="mb-4">
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+          <label htmlFor="custom-request-description" className="block text-xs font-semibold text-slate-500 mb-1.5">
             ¿Qué necesitas?
           </label>
           <textarea
+            id="custom-request-description"
             rows={4}
             placeholder="Describe el producto, la cantidad, las medidas u otros detalles relevantes…"
             value={form.description}
@@ -200,6 +204,7 @@ export default function CustomRequestForm() {
               </span>
 
               <button
+                type="button"
                 onClick={removeFile}
                 className="text-slate-400 hover:text-slate-700 transition p-0.5"
               >
@@ -216,7 +221,7 @@ export default function CustomRequestForm() {
         <div className="border-t border-slate-100 my-5" />
 
         <button
-          onClick={handleSubmit}
+          type="submit"
           disabled={loading}
           className="w-full bg-orange-500 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -230,6 +235,8 @@ export default function CustomRequestForm() {
         {/* Message (IGUAL) */}
         {message && (
           <div
+            role="status"
+            aria-live="polite"
             className={`flex items-center gap-2 mt-4 px-4 py-3 rounded-xl text-sm ${
               message.type === "ok"
                 ? "bg-green-50 text-green-700 border border-green-200"
@@ -251,7 +258,7 @@ export default function CustomRequestForm() {
           </div>
         )}
 
+      </form>
       </div>
-    </div>
   );
 }

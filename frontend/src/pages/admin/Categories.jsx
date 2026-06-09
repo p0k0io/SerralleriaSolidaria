@@ -12,4 +12,4 @@ export default function Categories() {
  */}      <ShowCategories refreshSignal={refreshCategories} />
     </div>
   );
-}
+} 

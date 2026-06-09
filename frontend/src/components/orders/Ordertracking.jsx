@@ -73,6 +73,7 @@ function SearchBox({ onSearch, loading }) {
           <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
         </svg>
         <input ref={ref} type="text" value={val} onChange={e => setVal(e.target.value)}
+          aria-label="Número de seguimiento"
           placeholder="Número de seguimiento — ej. TRK-A1B2C3D4"
           style={{
             width: "100%", height: 52, paddingLeft: 40, paddingRight: 16,
